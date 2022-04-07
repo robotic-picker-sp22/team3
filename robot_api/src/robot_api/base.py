@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 from geometry_msgs.msg import Twist
 import rospy
@@ -64,4 +64,4 @@ class Base(object):
         msg.linear.x = 0
         msg.angular.z = 0
 
-        rospy.logerr('Not implemented.')
+        # rospy.logerr('Not implemented.')
