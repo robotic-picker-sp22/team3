@@ -5,8 +5,8 @@ import rospy
 
 
 def print_usage():
-    print 'Usage: rosrun applications lights_demo.py off'
-    print '       rosrun applications lights_demo.py on'
+    print('Usage: rosrun applications lights_demo.py off')
+    print('       rosrun applications lights_demo.py on')
 
 
 def wait_for_time():
