@@ -30,30 +30,6 @@ export function useRos(url: string="ws://localhost:9090", reconnect_ms: number=5
     return ros
 }
 
-export function useTorsoHeight(ros: ROSLIB.Ros, decimalPlaces: number=3) {
-    const [height, setHeight] = useState<number>(0.0)
-    const [listener, setListener] = useState(new ROSLIB.Topic({
-        ros: ros,
-        name: 'joint_state_republisher/torso_lift_joint',
-        messageType: 'std_msgs/Float64'
-    }))
-
-    useEffect(() => {
-        if (!listener.hasListeners()) {
-            listener.subscribe((msg: any) => {
-                const newHeight = round(msg.data as number, decimalPlaces)
-                if (newHeight !== height) {
-                    setHeight(newHeight)
-                }
-            })
-            console.log("Subscribed to Torso Height")
-        }
-        return () => { listener.unsubscribe(() => {console.log("Unsubscribed to TorsoHeight")}) }
-    }, [listener])
-
-    return height
-}
-
 export function useTopicSubscriber(rosTopic: ROSLIB.Topic) {
     const [msg, setMsg] = useState(new ROSLIB.Message(null))
     useEffect(() => {

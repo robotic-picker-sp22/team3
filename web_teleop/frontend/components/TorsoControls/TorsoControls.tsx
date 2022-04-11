@@ -1,11 +1,11 @@
 import { Button, NumberInput, Slider } from "@mantine/core"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import ROSLIB from "roslib"
 import { round } from "../../utils/helpers"
-import { useTorsoHeight } from "../../utils/RosHooks"
-import styles from "./SetTorsoHeight.module.css"
+import { useTopicSubscriber } from "../../utils/RosHooks"
+import styles from "./TorsoControls.module.css"
 
-type SetTorsoHeightProps = {
+type TorsoControlsProps = {
     ros: ROSLIB.Ros
 }
 
@@ -18,8 +18,14 @@ const MARKS = [
     { value: round(MAX_HEIGHT / 4 * 3, 1), label: round(MAX_HEIGHT / 4 * 3, 1) + "m" },
     { value: MAX_HEIGHT, label: MAX_HEIGHT + "m" }
 ]
-export default function SetTorsoHeight({ ros }: SetTorsoHeightProps) {
-    const torsoHeight = useTorsoHeight(ros)
+export default function TorsoControls({ ros }: TorsoControlsProps) {
+    const rosTopic = new ROSLIB.Topic({
+        ros: ros,
+        name: 'joint_state_republisher/torso_lift_joint',
+        messageType: 'std_msgs/Float64'
+    })
+    const torsoMsg = useTopicSubscriber(rosTopic) as any
+    const torsoHeight = torsoMsg.data || 0 as number
     const service = new ROSLIB.Service({
         ros,
         name: "/web_teleop/set_torso",
@@ -42,7 +48,7 @@ export default function SetTorsoHeight({ ros }: SetTorsoHeightProps) {
     return (
         <section>
             <h3>Torso Controls</h3>
-            <div className={styles.heightText}>Current Torso Height: {torsoHeight}</div>
+            <div className={styles.heightText}>Current Torso Height: {round(torsoHeight, PRECISION)}m</div>
             <Slider
                 className={styles.slider}
                 showLabelOnHover

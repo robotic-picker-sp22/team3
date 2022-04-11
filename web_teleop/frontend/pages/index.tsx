@@ -1,11 +1,9 @@
 import { AppShell } from '@mantine/core'
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import Image from 'next/image'
 import React from 'react'
-import SetTorsoHeight from '../components/SetTorsoHeight/SetTorsoHeight'
 import SidePanel from '../components/SidePanel/SidePanel'
-import Status from '../components/Status/Status'
+import ArmPanel from '../components/ArmPanel/ArmPanel'
 import styles from '../styles/Home.module.css'
 import { useRos } from '../utils/RosHooks'
 
@@ -26,6 +24,7 @@ const Home: NextPage = () => {
         padding={"md"}
         aside={<SidePanel ros={ros} />}
         header={<h1 className={styles.title}>Welcome to ROS</h1>}
+        navbar={<ArmPanel ros={ros} />}
       >
         <img className={styles.camera} src={`//${typeof window !== "undefined" ? window.location.hostname : "localhost"}:${ROBOT_CAMERA_PORT}/stream?topic=/head_camera/rgb/image_raw`} alt="Live Robot Camera" />  
       </AppShell>

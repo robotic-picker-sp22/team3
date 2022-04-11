@@ -1,5 +1,4 @@
 .slider {
-    width: clamp(100px, 400px, 30vw);
     margin-bottom: 1.5rem;
 }
 

@@ -28,7 +28,7 @@ export default function GripperControls({ ros }: GripperControlsProps) {
 
     return (
         <div>
-            <h3>Gripper</h3>
+            <h3>Gripper Controls</h3>
             <Switch
                 checked={closed}
                 onLabel="Closed"
