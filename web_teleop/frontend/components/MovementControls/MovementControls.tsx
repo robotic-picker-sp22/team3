@@ -9,8 +9,8 @@ type MovementControlsProps = {
 }
 
 const CMD_INTERVAL_MS = 100
-const MOVE_VELOCITY_MAGNITUDE = 0.1
-const TURN_VELOCITY_MAGNITUDE = Math.PI / 8
+const MOVE_VELOCITY_MAGNITUDE = 0.5
+const TURN_VELOCITY_MAGNITUDE = Math.PI / 4
 const FORWARD = MOVE_VELOCITY_MAGNITUDE
 const BACK = -MOVE_VELOCITY_MAGNITUDE
 const LEFT = TURN_VELOCITY_MAGNITUDE
@@ -29,14 +29,19 @@ export default function MovementControls({ ros }: MovementControlsProps) {
     const createMoveHandlers = (moveVel: number) => {
         return {
             onMouseDown:() => setMoveVel(val => val + moveVel),
-            onMouseUp:() => setMoveVel(val => val - moveVel)
+            onMouseUp:() => setMoveVel(0),
+            onTouchStart: () => setMoveVel(val => val + moveVel),
+            onMouseEnd:() => setMoveVel(0),
         }
     }
 
     const createTurnHandlers = (moveVel: number) => {
         return {
             onMouseDown:() => setTurnVel(val => val + moveVel),
-            onMouseUp:() => setTurnVel(val => val - moveVel)
+            onMouseUp:() => setTurnVel(0),
+            onTouchStart: () => setTurnVel(val => val + moveVel),
+            onMouseEnd:() => setTurnVel(0),
+
         }
     }
 

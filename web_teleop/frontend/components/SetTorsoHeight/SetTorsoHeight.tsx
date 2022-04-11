@@ -41,6 +41,7 @@ export default function SetTorsoHeight({ ros }: SetTorsoHeightProps) {
     
     return (
         <section>
+            <h3>Torso Controls</h3>
             <div className={styles.heightText}>Current Torso Height: {torsoHeight}</div>
             <Slider
                 className={styles.slider}

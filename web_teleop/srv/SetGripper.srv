@@ -1,0 +1,3 @@
+# 0 for open, any positive integer for closed and maximum force
+uint64 close
+---

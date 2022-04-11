@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import ROSLIB from "roslib"
+import ROSLIB, { Topic } from "roslib"
 import { round } from "./helpers";
 
 
@@ -54,16 +54,12 @@ export function useTorsoHeight(ros: ROSLIB.Ros, decimalPlaces: number=3) {
     return height
 }
 
-
-export function useMovementTopic(ros: ROSLIB.Ros, decimalPlaces: number=3) {
-    const [topic, setTopic] = useState(new ROSLIB.Topic({
-        ros: ros,
-        name: 'cmd_vel',
-        messageType: 'geometry_msgs/Twist'
-    }))
-
+export function useTopicSubscriber(rosTopic: ROSLIB.Topic) {
+    const [msg, setMsg] = useState(new ROSLIB.Message(null))
     useEffect(() => {
+        rosTopic.subscribe(setMsg)
+        return rosTopic.unsubscribe
     }, [])
 
-    return topic
+    return msg
 }

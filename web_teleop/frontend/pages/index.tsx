@@ -29,21 +29,6 @@ const Home: NextPage = () => {
       >
         <img className={styles.camera} src={`//${typeof window !== "undefined" ? window.location.hostname : "localhost"}:${ROBOT_CAMERA_PORT}/stream?topic=/head_camera/rgb/image_raw`} alt="Live Robot Camera" />  
       </AppShell>
-
-      
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
     </div>
   )
 }
