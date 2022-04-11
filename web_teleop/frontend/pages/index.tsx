@@ -2,23 +2,13 @@ import type { NextPage } from 'next'
 import Head from 'next/head'
 import Image from 'next/image'
 import React from 'react'
-import ROSLIB from 'roslib'
-import Height from '../components/Height'
+import Status from '../components/Status/Status'
 import styles from '../styles/Home.module.css'
+import { useRos } from '../utils/RosHooks'
 
 const Home: NextPage = () => {
-  const ros = new ROSLIB.Ros({
-    url: "ws://localhost:9090"
-  })
-  ros.on('connection', () => {
-      console.log("Connected to websocket server")
-  })
-  ros.on('error', (error) => {
-      console.log("Error connecting to websocket", error)
-  })
-  ros.on('close', () => {
-      console.log("Closed connection to websocket server")
-  })
+  const ros = useRos()
+
   return (
     <div className={styles.container}>
       <Head>
@@ -31,7 +21,7 @@ const Home: NextPage = () => {
         <h1 className={styles.title}>
           Welcome to ROS
         </h1>
-        <p>Height: <Height ros={ros}/></p> 
+        <Status ros={ros}/>
       </main>
 
       <footer className={styles.footer}>
