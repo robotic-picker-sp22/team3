@@ -53,3 +53,17 @@ export function useTorsoHeight(ros: ROSLIB.Ros, decimalPlaces: number=3) {
 
     return height
 }
+
+
+export function useMovementTopic(ros: ROSLIB.Ros, decimalPlaces: number=3) {
+    const [topic, setTopic] = useState(new ROSLIB.Topic({
+        ros: ros,
+        name: 'cmd_vel',
+        messageType: 'geometry_msgs/Twist'
+    }))
+
+    useEffect(() => {
+    }, [])
+
+    return topic
+}

@@ -1,0 +1,10 @@
+.topButtons, .bottomButtons {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+}
+
+.topButtons button, .bottomButtons button {
+    margin: 0.25rem;
+    width: 12ch;
+}
