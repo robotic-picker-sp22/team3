@@ -17,6 +17,7 @@ class ActuatorServer(object):
         self._torso = robot_api.Torso()
         self._gripper = robot_api.Gripper()
         self._head = robot_api.Head()
+        self._arm = robot_api.Arm()
 
     def handle_set_torso(self, request):
         # TODO: move the torso to the requested height
@@ -36,6 +37,17 @@ class ActuatorServer(object):
     
     def handle_set_arm(self, request):
         # TODO: Set each arm joint
+        # joint_list = [request[name[:-6]] for name in robot_api.ArmJoints.names()]
+        joint_list = [request.shoulder_pan,
+                request.shoulder_lift,
+                request.upperarm_roll,
+                request.elbow_flex,
+                request.forearm_roll,
+                request.wrist_flex,
+                request.wrist_roll]
+
+        arm_joints = robot_api.ArmJoints.from_list(joint_list)
+        self._arm.move_to_joints(arm_joints)
         return SetArmResponse()
 
 

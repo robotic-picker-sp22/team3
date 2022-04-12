@@ -26,6 +26,8 @@ export default function ArmControls({ ros }: ArmControlsProps) {
     const [wristFlex , setWristFlex] = useState(0.0)
     const [wristRoll , setWristRoll] = useState(0.0)
 
+    function degsToRads(deg: number) {return (deg * Math.PI) / 180.0}
+
     const service = new ROSLIB.Service({
         ros,
         name: "web_teleop/set_arm",
@@ -52,19 +54,47 @@ export default function ArmControls({ ros }: ArmControlsProps) {
         <div>
             <h3>Arm Controls</h3>
             <h4>Shoulder Pan</h4>
-            <Slider onChangeEnd={setShoulderPan}/>
+            <Slider onChangeEnd={setShoulderPan}
+                min={degsToRads(-92)}
+                max={degsToRads(92)}
+                step={degsToRads(1)}
+            />
             <h4>Shoulder Lift</h4>
-            <Slider onChangeEnd={setShoulderLift}/>
+            <Slider onChangeEnd={setShoulderLift}
+                min={degsToRads(-70)}
+                max={degsToRads(87)}
+                step={degsToRads(1)}
+            />
             <h4>Upperarm Roll</h4>
-            <Slider onChangeEnd={setUpperarmRoll}/>
+            <Slider onChangeEnd={setUpperarmRoll}
+                min={degsToRads(0)}
+                max={degsToRads(360)}
+                step={degsToRads(1)}
+            />
             <h4>Elbow Flex</h4>
-            <Slider onChangeEnd={setElbowFlex}/>
+            <Slider onChangeEnd={setElbowFlex}
+                min={degsToRads(-129)}
+                max={degsToRads(129)}
+                step={degsToRads(1)}
+            />
             <h4>Forearm Roll</h4>
-            <Slider onChangeEnd={setForearmRoll}/>
+            <Slider onChangeEnd={setForearmRoll}
+                min={degsToRads(0)}
+                max={degsToRads(360)}
+                step={degsToRads(1)}
+            />
             <h4>Wrist Flex</h4>
-            <Slider onChangeEnd={setWristFlex}/>
+            <Slider onChangeEnd={setWristFlex}
+                min={degsToRads(-125)}
+                max={degsToRads(125)}
+                step={degsToRads(1)}
+            />
             <h4>Wrist Roll</h4>
-            <Slider onChangeEnd={setWristRoll}/>
+            <Slider onChangeEnd={setWristRoll}
+                min={degsToRads(0)}
+                max={degsToRads(360)}
+                step={degsToRads(1)}
+            />
         </div>
     )
 }
