@@ -74,7 +74,7 @@ class Base(object):
     def _odom_callback(self, msg):
         self.latest_odom = msg
 
-    def go_forward(self, distance, speed=0.1):
+    def go_forward(self, distance, speed=0.5):
         """Moves the robot a certain distance.
 
         It's recommended that the robot move slowly. If the robot moves too
@@ -96,11 +96,15 @@ class Base(object):
         
         # TODO: CONDITION should check if the robot has traveled the desired distance
         # TODO: Be sure to handle the case where the distance is negative!
-        while abs(math.dist(p2p(self.latest_odom.pose.pose.position), p2p(start.pose.pose.position))) < distance: #10cm
+        traveled_distance = abs(math.dist(p2p(self.latest_odom.pose.pose.position), p2p(start.pose.pose.position)))
+        while traveled_distance < abs(distance):
             # TODO: you will probably need to do some math in this loop to check the CONDITION
             direction = -1 if distance < 0 else 1
-            self.move(direction * speed, 0)
+            linear_speed = max(0.05, min(speed, abs(distance) - traveled_distance))
+            self.move(direction * linear_speed, 0)
             rate.sleep()
+            traveled_distance = abs(math.dist(p2p(self.latest_odom.pose.pose.position), p2p(start.pose.pose.position)))
+
 
     def turn(self, angular_distance, speed=0.5):
         """Rotates the robot a certain angle.
@@ -127,7 +131,8 @@ class Base(object):
                 or (turn < 0 and prev_turn >= curr_turn and turn < curr_turn):
             # TODO: you will probably need to do some math in this loop to check the CONDITION
             direction = -1 if angular_distance < 0 else 1
-            self.move(0, direction * speed)
+            angular_speed = max(0.25, min(speed, abs(turn - curr_turn)))
+            self.move(0, direction * angular_speed)
             rate.sleep()
             prev_turn = curr_turn
             curr_turn = angle(yaw_start, get_yaw(self.latest_odom.pose.pose.orientation), turn >= 0)
