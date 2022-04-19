@@ -2,8 +2,8 @@
 
 import robot_api
 import rospy
-from web_teleop.srv import SetTorso, SetTorsoResponse, SetGripper, SetGripperResponse, SetArm, SetArmResponse, SetHead, SetHeadResponse
-
+# from web_teleop.srv import SetTorso, SetTorsoResponse, SetGripper, SetGripperResponse, SetArm, SetArmResponse, SetHead, SetHeadResponse
+from web_teleop.srv import *
 
 def wait_for_time():
     """Wait for simulated time to begin.
@@ -18,6 +18,7 @@ class ActuatorServer(object):
         self._gripper = robot_api.Gripper()
         self._head = robot_api.Head()
         self._arm = robot_api.Arm()
+        self._nav_goal = robot_api.NavGoal()
 
     def handle_set_torso(self, request):
         # TODO: move the torso to the requested height
@@ -50,6 +51,26 @@ class ActuatorServer(object):
         self._arm.move_to_joints(arm_joints)
         return SetArmResponse()
 
+    def handle_nav(self, request):
+        func_name = request.func_name
+        response = NavResponse()
+        if func_name == "save_current_pose":
+            self._nav_goal.save_current_pose(request.pose_name)
+            response.success = True
+        elif func_name == "get_locations":
+            response.locations = self._nav_goal.get_locations()
+            response.success = True
+        elif func_name == "goto":
+            response.success = self._nav_goal.goto(request.pose_name)
+        elif func_name == "delete":
+            response.success = self._nav_goal.delete(request.pose_name)
+        else:
+            response.success = False
+        response.locations = self._nav_goal.get_locations()
+        return response
+
+
+
 
 def main():
     rospy.init_node('web_teleop_actuators')
@@ -60,6 +81,7 @@ def main():
     gripper_service = rospy.Service('web_teleop/set_gripper', SetGripper, server.handle_set_gripper)
     head_service = rospy.Service("web_teleop/set_head", SetHead, server.handle_set_head)
     arm_service = rospy.Service("web_teleop/set_arm", SetArm, server.handle_set_arm)
+    nav_goal = rospy.Service("web_teleop/nav_goal", Nav, server.handle_nav)
     rospy.spin()
 
 

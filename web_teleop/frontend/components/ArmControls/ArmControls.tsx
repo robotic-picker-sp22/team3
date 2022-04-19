@@ -1,4 +1,4 @@
-import { Slider } from "@mantine/core"
+import { Button, Slider } from "@mantine/core"
 import { useEffect, useState } from "react"
 import ROSLIB from "roslib"
 
@@ -16,15 +16,23 @@ type ArmControlsProps = {
     defaultValue={0}
 */
 
+const SHOULDER_PAN = 1.32
+const SHOULDER_LIFT = 1.4
+const UPPERARM_ROLL = -0.2
+const ELBOW_FLEX = 1.72
+const FOREARM_ROLL = 7.55e-6
+const WRIST_FLEX = 1.66
+const WRIST_ROLL = 1.28e-6
+
 export default function ArmControls({ ros }: ArmControlsProps) {
 
-    const [shoulderPan , setShoulderPan] = useState(0.0)
-    const [shoulderLift , setShoulderLift] = useState(0.0)
-    const [upperarmRoll , setUpperarmRoll] = useState(0.0)
-    const [elbowFlex , setElbowFlex] = useState(0.0)
-    const [forearmRoll , setForearmRoll] = useState(0.0)
-    const [wristFlex , setWristFlex] = useState(0.0)
-    const [wristRoll , setWristRoll] = useState(0.0)
+    const [shoulderPan , setShoulderPan] = useState(SHOULDER_PAN)
+    const [shoulderLift , setShoulderLift] = useState(SHOULDER_LIFT)
+    const [upperarmRoll , setUpperarmRoll] = useState(UPPERARM_ROLL)
+    const [elbowFlex , setElbowFlex] = useState(ELBOW_FLEX)
+    const [forearmRoll , setForearmRoll] = useState(FOREARM_ROLL)
+    const [wristFlex , setWristFlex] = useState(WRIST_FLEX)
+    const [wristRoll , setWristRoll] = useState(WRIST_ROLL)
 
     function degsToRads(deg: number) {return (deg * Math.PI) / 180.0}
 
@@ -95,6 +103,15 @@ export default function ArmControls({ ros }: ArmControlsProps) {
                 max={degsToRads(360)}
                 step={degsToRads(1)}
             />
+            <Button onClick={() => {
+                setShoulderPan(SHOULDER_PAN)
+                setShoulderLift(SHOULDER_LIFT)
+                setUpperarmRoll(UPPERARM_ROLL)
+                setElbowFlex(ELBOW_FLEX)
+                setForearmRoll(FOREARM_ROLL)
+                setWristFlex(WRIST_FLEX)
+                setWristRoll(WRIST_ROLL)
+            }}>Default Position</Button>
         </div>
     )
 }

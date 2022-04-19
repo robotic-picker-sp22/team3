@@ -17,7 +17,7 @@ class NavPath(object):
         marker = Marker(
                 type=Marker.LINE_STRIP,
                 # id=0,
-                lifetime=rospy.Duration(10),
+                lifetime=rospy.Duration(15),
                 scale=Vector3(0.06, 0.06, 0.06),
                 header=Header(frame_id='odom'),
                 color=ColorRGBA(0.0, 1.0, 0.0, 0.8),
