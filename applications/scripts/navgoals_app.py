@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 import rospy
-import robot_api
+import map_annotator
 
 def wait_for_time():                                                                          
     """Wait for simulated time to begin.
@@ -16,7 +16,7 @@ def main():
     print('Welcome to the map annotator!')
     show_commands()
 
-    nav_goal = robot_api.NavGoal()
+    nav_goal = map_annotator.NavGoal()
 
     txt = ''
     while True:

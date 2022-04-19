@@ -6,4 +6,3 @@ from .head import Head
 # Lab7
 from .arm import Arm
 from .arm_joints import ArmJoints
-from .nav_goal import NavGoal

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 //@ts-ignore
 import * as ROS3D from "ros3d"
 import ROSLIB from "roslib"
+import { rvizConfig } from "../../utils/constants"
 
 type ViewerProps = {
     ros: ROSLIB.Ros
@@ -35,6 +36,17 @@ export default function Viewer({ ros }: ViewerProps) {
                 camera : viewer.camera,
                 rootObject : viewer.selectableObjects
             })
+
+            viewer.addObject(new ROS3D.Grid());
+            const rdfClient = new ROS3D.UrdfClient({
+                ros : ros,
+                tfClient : tfClient,
+                path : 'http://localhost:8001/',
+                rootObject : viewer.scene,
+                loader : ROS3D.COLLADA_LOADER_2
+            });
+            // @ts-ignore
+            divRef.current.config = rvizConfig
         }
         
     }, [])

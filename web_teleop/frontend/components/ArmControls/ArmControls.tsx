@@ -112,6 +112,15 @@ export default function ArmControls({ ros }: ArmControlsProps) {
                 setWristFlex(WRIST_FLEX)
                 setWristRoll(WRIST_ROLL)
             }}>Default Position</Button>
+            <Button onClick={() => {
+                setShoulderPan(0.0)
+                setShoulderLift(0.0)
+                setUpperarmRoll(0.0)
+                setElbowFlex(0.0)
+                setForearmRoll(0.0)
+                setWristFlex(0.0)
+                setWristRoll(0.0)
+            }}>Straight</Button>
         </div>
     )
 }

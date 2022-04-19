@@ -9,7 +9,7 @@ printf "started.\n"
 printf "starting gazebo... "
 tmux new -d -s gazebo
 tmux send-keys -t gazebo "roslaunch fetch_gazebo playground.launch" Enter
-sleep 4
+sleep 8
 printf "started.\n"
 
 # Start RViz

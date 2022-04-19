@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import robot_api
+import map_annotator
 import rospy
 # from web_teleop.srv import SetTorso, SetTorsoResponse, SetGripper, SetGripperResponse, SetArm, SetArmResponse, SetHead, SetHeadResponse
 from web_teleop.srv import *
@@ -18,7 +19,7 @@ class ActuatorServer(object):
         self._gripper = robot_api.Gripper()
         self._head = robot_api.Head()
         self._arm = robot_api.Arm()
-        self._nav_goal = robot_api.NavGoal()
+        self._nav_goal = map_annotator.NavGoal()
 
     def handle_set_torso(self, request):
         # TODO: move the torso to the requested height
