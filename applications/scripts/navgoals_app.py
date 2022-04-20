@@ -32,8 +32,13 @@ def main():
                 show_commands()
             elif command == 'quit':
                 break
+            else:
+                print('Does not compute')
         elif len(txt) == 2:
-            if command == 'save':
+            if command == 'create':
+                nav_goal.create_new_pose(txt[1])
+                print(f'Created {txt[1]}')
+            elif command == 'save':
                 nav_goal.save_current_pose(txt[1])
                 print(f'Saved {txt[1]}')
             elif command == 'delete':
@@ -46,6 +51,8 @@ def main():
                     print(f'Going to {txt[1]}')
                 else:
                     print(f'No such pose {txt[1]}')
+            else:
+                print('Does not compute')
         else:
             print('Couldn\'t recognize command')
     print('all done')
@@ -55,6 +62,7 @@ def show_commands():
     print('Commands:')
     print('\tlist: List saved poses.')
     print('\tsave <name>: Save the robot\'s current pose as <name>. Overwrites if <name> already exists.')
+    print('\tcreate <name>: Create a new pose <name> at the origin.')
     print('\tdelete <name>: Delete the pose given by <name>.')
     print('\tgoto <name>: Sends the robot to the pose given by <name>.')
     print('\thelp: Show this list of commands')
