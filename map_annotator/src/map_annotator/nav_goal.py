@@ -12,7 +12,7 @@ import pickle
 import os
 
 DEFAULT_FILE = 'navgoal_data.pkl'
-
+TOPIC = "/map_annotator/map_poses"
 class NavGoal(object):
     '''
     Stores a list of poses (locations in the map/room) and names for those 
@@ -34,7 +34,7 @@ class NavGoal(object):
         '''
         self._pose_subscriber = rospy.Subscriber(POSE_TOPIC, PoseWithCovarianceStamped, callback=self._pose_callback)
         self._goal_publisher = rospy.Publisher(GOAL_TOPIC, PoseStamped, queue_size=10)
-        self._marker_server = InteractiveMarkerServer('pose_marker')
+        self._marker_server = InteractiveMarkerServer(TOPIC)
         self._pkl_path = pkl_path if pkl_path is not None else os.path.join(rospkg.RosPack().get_path('map_annotator'), DEFAULT_FILE)
         self._load_from_file()
 

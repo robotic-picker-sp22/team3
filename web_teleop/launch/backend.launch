@@ -7,7 +7,7 @@
   </node>
   
   <!-- From map_annotator -->
-  <node pkg="map_annotator" type="server.py" name="map_annotator_server" args="$(env HOME)/our_pose_db_name.db"/>
+  <node pkg="map_annotator" type="backend_server.py" name="map_annotator_server" args="$(env HOME)/our_pose_db_name.db"/>
 
   <!-- Web prereqs -->
   <node pkg="tf2_web_republisher" type="tf2_web_republisher" name="tf2_web_republisher" />
