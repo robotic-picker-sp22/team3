@@ -6,3 +6,5 @@ from .head import Head
 # Lab7
 from .arm import Arm
 from .arm_joints import ArmJoints
+# Lab 19
+from .moveit_goal_builder import MoveItGoalBuilder
