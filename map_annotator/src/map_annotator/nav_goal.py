@@ -3,23 +3,35 @@ GOAL_TOPIC = '/move_base_simple/goal'
 
 import random
 import rospy
+import rospkg
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
 from visualization_msgs.msg import Marker
+import pickle
+import os
+
+DEFAULT_FILE = 'navgoal_data.pkl'
 
 class NavGoal(object):
     '''
-    Sends navigation goals to the robot
+    Stores a list of navigation poses
+    InteractiveMarkerServer code: http://docs.ros.org/en/jade/api/interactive_markers/html/interactive__marker__server_8py_source.html
     '''
     _latest_pose: PoseWithCovarianceStamped = None
     _names = set()
+    # TODO: create a topic and publish the list of names whenever a pose is added, deleted, or renamed
 
-    def __init__(self):
+    def __init__(self, pkl_path=None):
         # Create a subscriber
         self._pose_subscriber = rospy.Subscriber(POSE_TOPIC, PoseWithCovarianceStamped, callback=self._pose_callback)
         self._goal_publisher = rospy.Publisher(GOAL_TOPIC, PoseStamped, queue_size=10)
         self._marker_server = InteractiveMarkerServer('pose_marker')
+        self._pkl_path = pkl_path if pkl_path is not None else os.path.join(rospkg.RosPack().get_path('map_annotator'), DEFAULT_FILE)
+        self._load_from_file()
+
+    def __del__(self):
+        self._save_to_file()
 
     def save_current_pose(self, name: str):
         '''
@@ -69,6 +81,30 @@ class NavGoal(object):
         self._marker_server.applyChanges()
         return out
 
+    def _load_from_file(self):
+        '''
+        Load previous names and poses from the file and create new interactive markers for them
+        '''
+        if os.path.isfile(self._pkl_path):
+            rospy.loginfo(f'Found data file {self._pkl_path}')
+            file = open(self._pkl_path, 'rb')
+            data = pickle.load(file)
+            for name in data.keys():
+                self._names.add(name)
+                self._create_interactive_marker(name, data[name])
+            file.close()
+
+
+    def _save_to_file(self):
+        file = open(self._pkl_path, 'wb')
+        data = {}
+        for name in self._names:
+            marker = self._marker_server.get(name)
+            data[name] = marker.pose
+        pickle.dump(data, file)
+        file.close()
+        rospy.loginfo(f'Saved navigation pose data to {self._pkl_path}')
+
 
     def _pose_callback(self, msg):
         '''
@@ -85,7 +121,6 @@ class NavGoal(object):
         new_imarker.description = marker_name
         if pose is not None:
             new_imarker.pose = pose
-            rospy.loginfo(f'Creating at pose {pose}')
         else:
             new_imarker.pose.position.x = 0
             new_imarker.pose.position.y = 0
