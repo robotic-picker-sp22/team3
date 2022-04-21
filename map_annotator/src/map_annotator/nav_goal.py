@@ -15,15 +15,23 @@ DEFAULT_FILE = 'navgoal_data.pkl'
 
 class NavGoal(object):
     '''
-    Stores a list of navigation poses
+    Stores a list of poses (locations in the map/room) and names for those 
+    locations. The robot can be moved to one of the saved locations. The 
+    locations are displayed as markers in RViz, where the user can change
+    the position and orientation.   
+
+    Refrence code:
     InteractiveMarkerServer code: http://docs.ros.org/en/jade/api/interactive_markers/html/interactive__marker__server_8py_source.html
     '''
     _latest_pose: PoseWithCovarianceStamped = None
     _names = set()
-    # TODO: create a topic and publish the list of names whenever a pose is added, deleted, or renamed
 
     def __init__(self, pkl_path=None):
-        # Create a subscriber
+        '''
+        Create a subscriber to the robot location, a publisher to set goal poses for the robot to go to, 
+        an interactive marker server to create markers in RViz, and load previous names and poses from a
+        pickle file on startup
+        '''
         self._pose_subscriber = rospy.Subscriber(POSE_TOPIC, PoseWithCovarianceStamped, callback=self._pose_callback)
         self._goal_publisher = rospy.Publisher(GOAL_TOPIC, PoseStamped, queue_size=10)
         self._marker_server = InteractiveMarkerServer('pose_marker')
@@ -31,6 +39,10 @@ class NavGoal(object):
         self._load_from_file()
 
     def __del__(self):
+        '''
+        On exit, save names and poses to a pickel file on disk, so the same 
+        data can be restored on startup
+        '''
         self._save_to_file()
 
     def save_current_pose(self, name: str):
@@ -50,7 +62,7 @@ class NavGoal(object):
         self._names.add(name)
         self._create_interactive_marker(name)
 
-    def get_locations(self):
+    def get_locations(self) -> list:
         '''
         Return a list of locations the user has created
         '''
@@ -63,7 +75,6 @@ class NavGoal(object):
         marker = self._marker_server.get(name)
         if marker is None:
             return False
-
         pose = PoseStamped()
         pose.header = marker.header
         pose.pose = marker.pose
@@ -83,7 +94,8 @@ class NavGoal(object):
 
     def _load_from_file(self):
         '''
-        Load previous names and poses from the file and create new interactive markers for them
+        Load previous names and poses from the file and create new 
+        interactive markers for them
         '''
         if os.path.isfile(self._pkl_path):
             rospy.loginfo(f'Found data file {self._pkl_path}')
@@ -96,6 +108,9 @@ class NavGoal(object):
 
 
     def _save_to_file(self):
+        '''
+        Save all the names and poses into a file on disk
+        '''
         file = open(self._pkl_path, 'wb')
         data = {}
         for name in self._names:
@@ -114,6 +129,12 @@ class NavGoal(object):
         self._latest_pose = msg
 
     def _create_interactive_marker(self, marker_name: str, pose=None):
+        '''
+        Creates a new arrow interactive marker
+
+        marker_name - the text to display above the marker
+        pose - the pose orientation and location of the marker; origin if None
+        '''
         # Create the interactive marker
         new_imarker = InteractiveMarker()
         new_imarker.header.frame_id = 'map'
@@ -141,12 +162,19 @@ class NavGoal(object):
 
     @staticmethod
     def _marker_callback(feedback):
+        '''
+        Called when user interacts with marker in RViz
+        '''
         s = "Feedback from marker '" + feedback.marker_name
         s += "' / control '" + feedback.control_name + "'"
         # rospy.loginfo(s)
 
     @staticmethod
     def _create_arrow_marker():
+        '''
+        Creates the vizual arrow marker for the interactive marker
+        returns: a new arrow marker
+        '''
         # Create the arrow marker
         new_marker = Marker()
         new_marker.type = Marker.ARROW
@@ -162,7 +190,10 @@ class NavGoal(object):
 
     @staticmethod
     def _create_controls():
-        # Create move and rotate controls
+        '''
+        Creates the move and rotate controls for the interactive marker
+        returns: control to move along the xy plane, control to rotate around z axis
+        '''
         move_ctrl = InteractiveMarkerControl()
         move_ctrl.orientation.w = 1
         move_ctrl.orientation.x = 0
