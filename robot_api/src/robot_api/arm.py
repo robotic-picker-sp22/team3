@@ -6,8 +6,7 @@ import rospy
 from .moveit_goal_builder import MoveItGoalBuilder
 from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest
 # from moveit_python import MoveGroupInterface
-from moveit_msgs.msg import MoveItErrorCodes, MoveGroupAction, MoveGroupGoal                          
-
+from moveit_msgs.msg import MoveItErrorCodes, MoveGroupAction, MoveGroupGoal, OrientationConstraint
 from .arm_joints import ArmJoints
 
 ACTION_NAME = 'arm_controller/follow_joint_trajectory'
@@ -42,7 +41,8 @@ class Arm(object):
                  plan_only=False,
                  replan=False,
                  replan_attempts=5,
-                 tolerance=0.01):
+                 tolerance=0.01,
+                 orientation_constraint: OrientationConstraint=None):
         """Moves the end-effector to a pose, using motion planning.
 
         Args:
@@ -64,7 +64,7 @@ class Arm(object):
             replan_attempts: int. How many times to replan if the execution
                 fails.
             tolerance: float. The goal tolerance, in meters.
-
+            orientation_constraint: the orientation the object should be at all times
         Returns:
             string describing the error if an error occurred, else None.
         """
@@ -80,17 +80,22 @@ class Arm(object):
         goal_builder.replan = replan
         goal_builder.replan_attempts = replan_attempts
         goal_builder.tolerance = tolerance
+        if orientation_constraint is not None:
+            goal_builder.add_path_orientation_constraint(orientation_constraint)
         goal: MoveGroupGoal = goal_builder.build()
 
         # Send goal and await result
         self._move_group_client.send_goal(goal)
         self._move_group_client.wait_for_result(rospy.Duration(execution_timeout))
         move_group_result = self._move_group_client.get_result()
-        if move_group_result.error_code.val == MoveItErrorCodes.SUCCESS:
+        if move_group_result != None and move_group_result.error_code.val == MoveItErrorCodes.SUCCESS:
             return None
         else:
             # On failure, return error string
-            return moveit_error_string(move_group_result.error_code.val)
+            if move_group_result == None:
+                return moveit_error_string(MoveItErrorCodes.TIMED_OUT)
+            else:
+                return moveit_error_string(move_group_result.error_code.val)
 
     def check_pose(self, 
                pose_stamped,

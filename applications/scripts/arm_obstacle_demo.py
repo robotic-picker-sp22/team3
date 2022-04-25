@@ -4,7 +4,7 @@ import rospy
 import robot_api
 from moveit_python import PlanningSceneInterface
 from geometry_msgs.msg import Quaternion, Pose, Point, PoseStamped
-
+from moveit_msgs.msg import OrientationConstraint
 
 def wait_for_time():
     """Wait for simulated time to begin.
@@ -85,14 +85,23 @@ def main():
         planning_scene.sendColors()
     rospy.sleep(1)
 
-    # At the end of your program
-    # planning_scene.removeAttachedObject('tray')
-    error = arm.move_to_pose(pose2, **kwargs)
+    oc = OrientationConstraint()
+    oc.header.frame_id = 'base_link'
+    oc.link_name = 'wrist_roll_link'
+    oc.orientation.w = 1
+    oc.absolute_x_axis_tolerance = 0.1
+    oc.absolute_y_axis_tolerance = 0.1
+    oc.absolute_z_axis_tolerance = 3.14
+    oc.weight = 1.0
+    
+    error = arm.move_to_pose(pose2, orientation_constraint=oc, **kwargs)
     if error is not None:
         rospy.logerr('Pose 2 failed: {}'.format(error))
     else:
         rospy.loginfo('Pose 2 succeeded')
-
+    
+    # At the end of your program
+    planning_scene.removeAttachedObject('tray')
     planning_scene.removeCollisionObject('table')
     planning_scene.removeCollisionObject('divider')
 
