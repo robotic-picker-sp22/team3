@@ -133,7 +133,7 @@ class Arm(object):
         self._client.wait_for_result()
         rospy.loginfo(f'Done moving arm {list(zip(arm_joints.names(), arm_joints.values()))}')
 
-    def compute_ik(self, pose_stamped, timeout=rospy.Duration(5)):
+    def compute_ik(self, pose_stamped, timeout=rospy.Duration(5), print=True):
         """Computes inverse kinematics for the given pose.
 
         Note: if you are interested in returning the IK solutions, we have
@@ -156,9 +156,10 @@ class Arm(object):
         if not success:
             return False
         joint_state = response.solution.joint_state
-        for name, position in zip(joint_state.name, joint_state.position):
-            if name in ArmJoints.names():
-                rospy.loginfo('{}: {}'.format(name, position))
+        if print:
+            for name, position in zip(joint_state.name, joint_state.position):
+                if name in ArmJoints.names():
+                    rospy.loginfo('{}: {}'.format(name, position))
         return True
 
 

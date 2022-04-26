@@ -373,15 +373,6 @@ Visualization Manager:
       Unreliable: false
       Use Timestamp: false
       Value: true
-    - Class: rviz/InteractiveMarkers
-      Enable Transparency: true
-      Enabled: true
-      Name: InteractiveMarkers
-      Show Axes: false
-      Show Descriptions: true
-      Show Visual Aids: false
-      Update Topic: /pose_marker/update
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

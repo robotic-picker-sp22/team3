@@ -32,7 +32,7 @@ def main():
     gripper_poses = [ps1, ps2]
 
 
-    for i in range(10):
+    for i in range(1):
         for pose in gripper_poses:
             pose.header.stamp = rospy.Time.now()
             error = arm.move_to_pose(pose)

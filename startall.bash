@@ -13,22 +13,23 @@ sleep 8
 printf "started.\n"
 
 # Start RViz
-printf "starting rviz and web app... "
+printf "starting rviz... "
 tmux new -d -s rviz
 tmux send-keys -t rviz "roslaunch applications nav_rviz.launch" Enter
+printf "started.\n"
 
 # Launch server
 # Backend
-tmux new -d -s backend
-tmux send-keys -t backend "roslaunch web_teleop backend.launch" Enter
+# tmux new -d -s backend
+# tmux send-keys -t backend "roslaunch web_teleop backend.launch" Enter
 
 # Launch frontend
-tmux new -d -s frontend
-tmux send-keys -t frontend "cd ~/catkin_ws/src/fetch-picker/web_teleop/frontend" Enter
-tmux send-keys -t frontend "npm run dev" Enter
-sleep 2
-printf "started. \n"
+# tmux new -d -s frontend
+# tmux send-keys -t frontend "cd ~/catkin_ws/src/fetch-picker/web_teleop/frontend" Enter
+# tmux send-keys -t frontend "npm run dev" Enter
+# sleep 2
+# printf "started. \n"
 
 # Open webserver
-printf "opening web app... \n"
-firefox http://localhost:3000/
+# printf "opening web app... \n"
+# firefox http://localhost:3000/
