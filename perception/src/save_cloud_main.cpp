@@ -16,6 +16,7 @@ void print_usage() {
 
 int main(int argc, char** argv) { 
   ros::init(argc, argv, "save_cloud_main");
+  std::cout << "Starting save cloud main." << std::endl;
   if (argc < 2) { 
     print_usage();
     return 1;

@@ -24,7 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
+catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -107,10 +107,13 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES perception
 #  CATKIN_DEPENDS roscpp rospy
 #  DEPENDS system_lib
+  LIBRARIES
+    perception_crop
+    perception_downsample
 )
 
 ###########
@@ -120,7 +123,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -166,6 +169,23 @@ add_dependencies(perception_save_cloud_main ${${PROJECT_NAME}_EXPORTED_TARGETS} 
 target_link_libraries(perception_save_cloud_main
    ${catkin_LIBRARIES}
 )
+add_executable(perception_point_cloud_demo src/point_cloud_demo.cpp)
+set_target_properties(perception_point_cloud_demo PROPERTIES OUTPUT_NAME point_cloud_demo PREFIX "")
+add_dependencies(perception_point_cloud_demo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(perception_point_cloud_demo
+  perception_crop
+  perception_downsample
+  ${catkin_LIBRARIES}
+)
+
+add_library(perception_crop src/crop.cpp)
+add_dependencies(perception_crop ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(perception_crop ${catkin_LIBRARIES})
+
+add_library(perception_downsample src/downsample.cpp)
+add_dependencies(perception_downsample ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(perception_downsample ${catkin_LIBRARIES})
+
 #
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
