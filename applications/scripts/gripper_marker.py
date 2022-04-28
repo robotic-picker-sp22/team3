@@ -149,6 +149,7 @@ class GripperTeleop(object):
         self._im_server.applyChanges()
         rospy.loginfo("applying to menu handler.")
 
+
     def handle_feedback(self, feedback: InteractiveMarkerFeedback):
         if feedback.event_type == InteractiveMarkerFeedback.MENU_SELECT:
             idx = feedback.menu_entry_id
@@ -159,7 +160,7 @@ class GripperTeleop(object):
                 pose_stamped.pose = self._im_server.get('gripper').pose
                 kwargs = {
                     'allowed_planning_time': 15,
-                    'execution_timeout': 10,
+                    'execution_timeout': 40,
                     'num_planning_attempts': 5,
                     'replan': False
                 }
@@ -287,15 +288,15 @@ class AutoPickTeleop(object):
         oc = OrientationConstraint()
         oc.header.frame_id = 'base_link'
         oc.link_name = 'wrist_roll_link'
-        oc.orientation = grip.pose.orientation
-        oc.absolute_x_axis_tolerance = 0.1
-        oc.absolute_y_axis_tolerance = 0.1
+        oc.orientation = pre.pose.orientation
+        oc.absolute_x_axis_tolerance = 0.2
+        oc.absolute_y_axis_tolerance = 0.2
         oc.absolute_z_axis_tolerance = 3.14
-        oc.weight = 1.5
+        oc.weight = 1.0
         move_to_pose(grip, oc=oc)
         self._gripper.close()
         # Move to lift constrained by object orientation
-        move_to_pose(lift)
+        move_to_pose(lift, oc=oc)
 
 
     def handle_feedback(self, feedback):

@@ -32,6 +32,60 @@ class Arm(object):
         # link to MoveGroupAction doc:
         # http://docs.ros.org/en/indigo/api/moveit_msgs/html/action/MoveGroup.html
 
+
+    
+    def _apply_default_constraints(self, goal_builder: MoveItGoalBuilder):
+        ''' 
+        Get link state:
+        rosservice call /gazebo/get_link_state 'link_name: fetch::elbow_flex_link'
+        '''
+        # Restrict shoulder height
+        oc = OrientationConstraint()
+        oc.header.frame_id = 'base_link'
+        oc.link_name = 'shoulder_lift_link'
+        oc.orientation.x = 0
+        oc.orientation.y = 0.5866522458554224 #1.2  # pointing downward
+        oc.orientation.z = 0    
+        oc.orientation.w = 1
+        oc.absolute_x_axis_tolerance = 3.14
+        oc.absolute_y_axis_tolerance = 0.4 # raise up to about flat
+        oc.absolute_z_axis_tolerance = 3.14
+        oc.weight = 1.0
+        # goal_builder.add_path_orientation_constraint(oc)
+
+        oc = OrientationConstraint()
+        oc.header.frame_id = 'base_link'
+        oc.link_name = 'gripper_link'
+        oc.absolute_x_axis_tolerance = 0.2 
+        oc.absolute_y_axis_tolerance = 0.2 # raise up to about flat
+        oc.absolute_z_axis_tolerance = 3.14
+        oc.weight = 1.0
+        goal_builder.add_path_orientation_constraint(oc)
+       
+        # links = ArmJoints.names()
+        # for link in links:
+        #     oc = OrientationConstraint()
+        #     oc.header.frame_id = link
+        #     oc.link_name = link
+        #     oc.absolute_x_axis_tolerance = 3.14
+        #     oc.absolute_y_axis_tolerance = 3.14
+        #     oc.absolute_z_axis_tolerance = 3.14
+        #     oc.weight = 0.8
+        #     goal_builder.add_path_orientation_constraint(oc)
+        
+        # oc = OrientationConstraint()
+        # oc.header.frame_id = 'base_link'
+        # oc.link_name = 'elbow_flex_link'
+        # oc.orientation.x = 0
+        # oc.orientation.y = -0.9967683264558241
+        # oc.orientation.z = 0    
+        # oc.orientation.w = 1
+        # oc.absolute_x_axis_tolerance = 3.14
+        # oc.absolute_y_axis_tolerance = 0.2
+        # oc.absolute_z_axis_tolerance = 3.14
+        # oc.weight = 0.8
+        # goal_builder.add_path_orientation_constraint(oc)
+
     def move_to_pose(self,
                  pose_stamped,
                  allowed_planning_time=10.0,
@@ -80,6 +134,7 @@ class Arm(object):
         goal_builder.replan = replan
         goal_builder.replan_attempts = replan_attempts
         goal_builder.tolerance = tolerance
+        self._apply_default_constraints(goal_builder)
         if orientation_constraint is not None:
             goal_builder.add_path_orientation_constraint(orientation_constraint)
         goal: MoveGroupGoal = goal_builder.build()

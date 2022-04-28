@@ -284,7 +284,7 @@ Visualization Manager:
       Axes Radius: 0.009999999776482582
       Class: rviz/PoseArray
       Color: 255; 25; 0
-      Enabled: true
+      Enabled: false
       Head Length: 0.07000000029802322
       Head Radius: 0.029999999329447746
       Name: Particles
@@ -294,7 +294,7 @@ Visualization Manager:
       Shape: Arrow (Flat)
       Topic: /particlecloud
       Unreliable: false
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -373,6 +373,194 @@ Visualization Manager:
       Unreliable: false
       Use Timestamp: false
       Value: true
+    - Class: rviz/InteractiveMarkers
+      Enable Transparency: true
+      Enabled: true
+      Name: InteractiveMarkers
+      Show Axes: false
+      Show Descriptions: true
+      Show Visual Aids: false
+      Update Topic: /auto_pick_im_server/update
+      Value: true
+    - Alpha: 1
+      Class: rviz/Axes
+      Enabled: false
+      Length: 0.4000000059604645
+      Name: Axes
+      Radius: 0.029999999329447746
+      Reference Frame: wrist_roll_link
+      Show Trail: false
+      Value: false
+    - Class: moveit_rviz_plugin/PlanningScene
+      Enabled: false
+      Move Group Namespace: ""
+      Name: PlanningScene
+      Planning Scene Topic: move_group/monitored_planning_scene
+      Robot Description: robot_description
+      Scene Geometry:
+        Scene Alpha: 0.8999999761581421
+        Scene Color: 50; 230; 50
+        Scene Display Time: 0.009999999776482582
+        Show Scene Geometry: true
+        Voxel Coloring: Z-Axis
+        Voxel Rendering: Occupied Voxels
+      Scene Robot:
+        Attached Body Color: 150; 50; 150
+        Links:
+          All Links Enabled: true
+          Expand Joint Details: false
+          Expand Link Details: false
+          Expand Tree: false
+          Link Tree Style: Links in Alphabetic Order
+          base_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          bellows_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          bellows_link2:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          bl_caster_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          br_caster_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          elbow_flex_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          estop_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          fl_caster_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          forearm_roll_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          fr_caster_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          gripper_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          head_camera_depth_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          head_camera_depth_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          head_camera_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          head_camera_rgb_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          head_camera_rgb_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          head_pan_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          head_tilt_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          l_gripper_finger_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          l_wheel_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          laser_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          r_gripper_finger_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          r_wheel_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          shoulder_lift_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          shoulder_pan_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          torso_fixed_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          torso_lift_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          upperarm_roll_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          wrist_flex_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          wrist_roll_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+        Robot Alpha: 1
+        Show Robot Collision: false
+        Show Robot Visual: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -401,7 +589,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 13.766828536987305
+      Distance: 1.4637984037399292
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -409,17 +597,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.31199705600738525
-        Y: -0.062058448791503906
-        Z: 0.0045623779296875
+        X: 3.5984132289886475
+        Y: 3.242295265197754
+        Z: 1.0115344524383545
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0231186151504517
+      Pitch: 0.23479650914669037
       Target Frame: <Fixed Frame>
-      Yaw: 1.5857691764831543
+      Yaw: 1.0247794389724731
     Saved: ~
 Window Geometry:
   Displays:
