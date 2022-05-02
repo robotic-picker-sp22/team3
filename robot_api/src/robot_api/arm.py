@@ -9,6 +9,9 @@ from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest
 from moveit_msgs.msg import MoveItErrorCodes, MoveGroupAction, MoveGroupGoal, OrientationConstraint
 from .arm_joints import ArmJoints
 
+# Joint State
+from sensor_msgs.msg import JointState
+
 ACTION_NAME = 'arm_controller/follow_joint_trajectory'
 TIME_FROM_START = 5
 
@@ -29,10 +32,14 @@ class Arm(object):
         self._move_group_client = actionlib.SimpleActionClient('move_group', MoveGroupAction)
         self._move_group_client.wait_for_server()
         self._compute_ik = rospy.ServiceProxy('compute_ik', GetPositionIK)
+        self._joint_state = None
+        self._joint_state_subscriber = rospy.Subscriber('joint_states', JointState, self._set_joint_state)
         # link to MoveGroupAction doc:
         # http://docs.ros.org/en/indigo/api/moveit_msgs/html/action/MoveGroup.html
 
 
+    def _set_joint_state(self, msg: JointState):
+        self._joint_state = msg
     
     def _apply_default_constraints(self, goal_builder: MoveItGoalBuilder):
         ''' 
@@ -60,7 +67,7 @@ class Arm(object):
         oc.absolute_y_axis_tolerance = 0.2 # raise up to about flat
         oc.absolute_z_axis_tolerance = 3.14
         oc.weight = 1.0
-        goal_builder.add_path_orientation_constraint(oc)
+        # goal_builder.add_path_orientation_constraint(oc)
        
         # links = ArmJoints.names()
         # for link in links:
@@ -134,6 +141,7 @@ class Arm(object):
         goal_builder.replan = replan
         goal_builder.replan_attempts = replan_attempts
         goal_builder.tolerance = tolerance
+        goal_builder.start_state.joint_state = self._joint_state
         self._apply_default_constraints(goal_builder)
         if orientation_constraint is not None:
             goal_builder.add_path_orientation_constraint(orientation_constraint)
@@ -205,12 +213,13 @@ class Arm(object):
         request.ik_request.pose_stamped = pose_stamped
         request.ik_request.group_name = 'arm'
         request.ik_request.timeout = timeout
+        request.ik_request.robot_state.joint_state = self._joint_state
         response = self._compute_ik(request)
         error_str = moveit_error_string(response.error_code.val)
         success = error_str == 'SUCCESS'
         if not success:
             return False
-        joint_state = response.solution.joint_state
+        joint_state: JointState = response.solution.joint_state
         if print:
             for name, position in zip(joint_state.name, joint_state.position):
                 if name in ArmJoints.names():
