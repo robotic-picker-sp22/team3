@@ -141,8 +141,9 @@ class Arm(object):
         goal_builder.replan = replan
         goal_builder.replan_attempts = replan_attempts
         goal_builder.tolerance = tolerance
-        goal_builder.start_state.joint_state = self._joint_state
-        self._apply_default_constraints(goal_builder)
+        if self._joint_state is not None:
+            goal_builder.start_state.joint_state = self._joint_state
+        # self._apply_default_constraints(goal_builder)
         if orientation_constraint is not None:
             goal_builder.add_path_orientation_constraint(orientation_constraint)
         goal: MoveGroupGoal = goal_builder.build()

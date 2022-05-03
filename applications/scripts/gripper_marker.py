@@ -8,7 +8,6 @@ from robot_api import Arm, Gripper
 from interactive_markers.menu_handler import MenuHandler, MenuEntry
 from moveit_msgs.msg import OrientationConstraint
 from geometry_msgs.msg import PoseStamped
-import math
 import tf.transformations as tft
 import numpy as np
 
