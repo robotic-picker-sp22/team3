@@ -8,11 +8,14 @@ from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest
 # from moveit_python import MoveGroupInterface
 from moveit_msgs.msg import MoveItErrorCodes, MoveGroupAction, MoveGroupGoal, OrientationConstraint
 from .arm_joints import ArmJoints
+from robot_controllers_msgs.msg import QueryControllerStatesAction
 
 # Joint State
 from sensor_msgs.msg import JointState
 
 ACTION_NAME = 'arm_controller/follow_joint_trajectory'
+# rf for relax / freeze
+RF_ACTION_NAME = '/query_controller_states'
 TIME_FROM_START = 5
 
 
@@ -29,13 +32,19 @@ class Arm(object):
     def __init__(self):
         self._client = actionlib.SimpleActionClient(ACTION_NAME, control_msgs.msg.FollowJointTrajectoryAction)
         self._client.wait_for_server()
+        print('follow joint trajectory initialized')
+        self._rf_client = actionlib.SimpleActionClient(RF_ACTION_NAME, QueryControllerStatesAction)
+        self._rf_client.wait_for_server()
+        print('query controller states initialized')
         self._move_group_client = actionlib.SimpleActionClient('move_group', MoveGroupAction)
         self._move_group_client.wait_for_server()
+        print('move group client initialized')
         self._compute_ik = rospy.ServiceProxy('compute_ik', GetPositionIK)
         self._joint_state = None
         self._joint_state_subscriber = rospy.Subscriber('joint_states', JointState, self._set_joint_state)
         # link to MoveGroupAction doc:
         # http://docs.ros.org/en/indigo/api/moveit_msgs/html/action/MoveGroup.html
+        print('arm object initialized')
 
 
     def _set_joint_state(self, msg: JointState):
@@ -226,6 +235,35 @@ class Arm(object):
                 if name in ArmJoints.names():
                     rospy.loginfo('{}: {}'.format(name, position))
         return True
+
+
+    """Relaxes the arm so a human can move it
+    Only has an effect if the robot is not in simulation, unless force is true
+
+    Args:
+        force: forces motion control to be stopped even if robot is in simulation
+    """
+    def stop_motion_control(self, force=False):
+        if force or not rospy.get_param("/use_sim_time", False):
+            goal = QueryControllerStatesGoal()
+            state = ControllerState()
+            state.name = 'arm_controller/follow_joint_trajectory'
+            state.state = ControllerState.STOPPED
+            goal.updates.append(state)
+            self._rf_client.send_goal(goal)
+            self._rf_client.wait_for_result()
+
+    """Starts motion control to allow robot movement
+    If stop_motion_control is called, this must be called before any moveit commands are run
+    """
+    def start_motion_control(self):
+        goal = QueryControllerStatesGoal()
+        state = ControllerState()
+        state.name = 'arm_controller/follow_joint_trajectory'
+        state.state = ControllerState.RUNNING
+        goal.updates.append(state)
+        self._rf_client.send_goal(goal)
+        self._rf_client.wait_for_result()
 
 
 def moveit_error_string(val):
