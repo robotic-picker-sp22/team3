@@ -112,6 +112,8 @@ class Arm(object):
                  replan=False,
                  replan_attempts=5,
                  tolerance=0.01,
+                 velocity_scale=0,
+                 acceleration_scale=0,
                  orientation_constraint: OrientationConstraint=None):
         """Moves the end-effector to a pose, using motion planning.
 
@@ -134,6 +136,10 @@ class Arm(object):
             replan_attempts: int. How many times to replan if the execution
                 fails.
             tolerance: float. The goal tolerance, in meters.
+            velocity_scale: float. How fast to allow the arm to move,
+                default of 0 means no scaling applied
+            acceleration_scale: float. How fast to allow the arm to accelerate,
+                default of 0 means no scaling applied
             orientation_constraint: the orientation the object should be at all times
         Returns:
             string describing the error if an error occurred, else None.
@@ -150,6 +156,8 @@ class Arm(object):
         goal_builder.replan = replan
         goal_builder.replan_attempts = replan_attempts
         goal_builder.tolerance = tolerance
+        goal_builder.max_velocity_scaling_factor = velocity_scale
+        goal_builder.max_acceleration_scaling_factor = acceleration_scale
         if self._joint_state is not None:
             goal_builder.start_state.joint_state = self._joint_state
         # self._apply_default_constraints(goal_builder)

@@ -22,6 +22,8 @@ class CommandLineApp(object):
 
         #self._joint_state_subscriber = rospy.Subscriber('joint_states', JointState, self._set_joint_state)
         print('command line app starting')
+        print('relaxing arm')
+        self._arm.stop_motion_control()
 
     def spin(self):
         while True:
@@ -48,12 +50,15 @@ class CommandLineApp(object):
                 command.pose = pose_stamped
             elif command_text == SAVE:
                 file_name = input("Enter file to save program: ").strip()
+                print("saving program...")
                 f = open(file_name, 'w')
                 for c in self._commands:
                     f.write(command_to_string(c))
                     f.write('\n')
                 f.close()
-                print("saved program, shutting down...")
+                print("re-freezing arm...")
+                self._arm.start_motion_control()
+                print("shutting down")
                 break
             else:
                 print("Command not recognized.")
