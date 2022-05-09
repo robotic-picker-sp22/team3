@@ -10,8 +10,8 @@ import tf2_geometry_msgs
 
 class PBDRunner:
     def __init__(self, file_name: str):
-        f = open(file_name, 'r')
-        self._commands = f.readlines()
+        with open(file_name, 'r') as f:
+            self._commands = f.readlines()
         self._gripper = Gripper()
         self._arm = Arm()
         self._tf_buffer = Buffer()
@@ -32,22 +32,7 @@ class PBDRunner:
         elif com.command == CLOSE:
             self._gripper.close()
         elif com.command == MOVE:
-            # frame = com.pose.header.frame_id
-            # transform = self.get_transform(frame, 'base_link')
-            # pose = tf2_geometry_msgs.do_transform_pose(com.pose, transform)
-            # self._arm.move_to_pose(pose)
-            kwargs = {
-                'allowed_planning_time': 15,
-                'execution_timeout': 15,
-                'num_planning_attempts': 10, 
-                'replan': False,
-                'tolerance': 0.25,
-                'velocity_scale': 0.1,
-                'acceleration_scale': 0.1
-            }
-            err = self._arm.move_to_pose(com.pose, **kwargs)
-            if err is not None:
-                print(f"encounetered error while attempting to move {err}")
+            self._arm.move_to_pose_ik(com.pose)
         else:
             print("command not recognized")
     

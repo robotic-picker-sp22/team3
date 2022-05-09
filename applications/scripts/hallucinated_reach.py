@@ -81,12 +81,13 @@ def main():
     start.pose.position.x = 0.5 
     start.pose.position.y = 0.5
     start.pose.position.z = 0.75
+    start.pose.orientation.w = 1.0
 
     arm = robot_api.Arm()
     def shutdown():
         arm.cancel_all_goals()
     rospy.on_shutdown(shutdown)
-    arm.move_to_pose(start)
+    arm.move_to_pose_ik(start)
 
     reader = ArTagReader(arm)
     reader.wait_for_markers()

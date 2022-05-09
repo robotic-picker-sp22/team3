@@ -8,7 +8,7 @@ from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest
 # from moveit_python import MoveGroupInterface
 from moveit_msgs.msg import MoveItErrorCodes, MoveGroupAction, MoveGroupGoal, OrientationConstraint
 from .arm_joints import ArmJoints
-from robot_controllers_msgs.msg import QueryControllerStatesAction
+from robot_controllers_msgs.msg import QueryControllerStatesAction, QueryControllerStatesGoal, ControllerState
 
 # Joint State
 from sensor_msgs.msg import JointState
@@ -197,16 +197,41 @@ class Arm(object):
         self._client.cancel_all_goals() # Your action client from Lab 7
         self._move_group_client.cancel_all_goals() # From this lab
 
-    def move_to_joints(self, arm_joints: ArmJoints):
+    def move_to_pose_ik(self, pose_stamped):
+        ''' Moves the robot arm to the given joints using 
+        compute_ik rather than move_to_pose
+        Args:
+            pose_stamped: the pose to move to
+        Returns: True on success, False if pose is impossible
+        '''
+        # Get joint positions
+        joint_names = ArmJoints.names()
+        joint_state: JointState = self.compute_ik(pose_stamped, print=False)
+        if joint_state is None:
+            # Cannot move to pose
+            rospy.logwarn('Cannot move arm to pose')
+            return False
+        # Get the joint position values
+        joint_vals = [0, 0, 0, 0, 0, 0, 0]
+        for name, position in zip(joint_state.name, joint_state.position):
+            if name in ArmJoints.names():
+                idx = joint_names.index(name)
+                joint_vals[idx] = position
+        arm_joints = ArmJoints.from_list(joint_vals)
+        self.move_to_joints(arm_joints, timeout=2)
+        return True
+
+    def move_to_joints(self, arm_joints: ArmJoints, timeout=TIME_FROM_START):
         """Moves the robot's arm to the given joints.
 
         Args:
             arm_joints: An ArmJoints object that specifies the joint values for
                 the arm.
+            timeout: How long the movement should take
         """
         point = trajectory_msgs.msg.JointTrajectoryPoint()
         point.positions = arm_joints.values()
-        point.time_from_start = rospy.Time(TIME_FROM_START)
+        point.time_from_start = rospy.Time(timeout)
         goal = control_msgs.msg.FollowJointTrajectoryGoal()
         goal.trajectory.joint_names = arm_joints.names()
         goal.trajectory.points = [point]
@@ -225,24 +250,23 @@ class Arm(object):
             timeout: rospy.Duration. How long to wait before giving up on the
                 IK solution.
 
-        Returns: True if the inverse kinematics were found, False otherwise.
+        Returns: The JointState if found, None otherwise
         """
         request = GetPositionIKRequest()
         request.ik_request.pose_stamped = pose_stamped
         request.ik_request.group_name = 'arm'
         request.ik_request.timeout = timeout
-        request.ik_request.robot_state.joint_state = self._joint_state
         response = self._compute_ik(request)
         error_str = moveit_error_string(response.error_code.val)
         success = error_str == 'SUCCESS'
         if not success:
-            return False
+            return None
         joint_state: JointState = response.solution.joint_state
         if print:
             for name, position in zip(joint_state.name, joint_state.position):
                 if name in ArmJoints.names():
                     rospy.loginfo('{}: {}'.format(name, position))
-        return True
+        return joint_state
 
 
     """Relaxes the arm so a human can move it

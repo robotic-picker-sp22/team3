@@ -4,12 +4,14 @@ from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, 
 from visualization_msgs.msg import Marker
 # ... Other imports ...
 import rospy
-from robot_api import Arm, Gripper
+from robot_api import Arm, Gripper, ArmJoints
 from interactive_markers.menu_handler import MenuHandler, MenuEntry
 from moveit_msgs.msg import OrientationConstraint
 from geometry_msgs.msg import PoseStamped
 import tf.transformations as tft
 import numpy as np
+from sensor_msgs.msg import JointState
+
 
 def make_6dof_controls():
     controls = []
@@ -157,17 +159,18 @@ class GripperTeleop(object):
                 pose_stamped = PoseStamped()
                 pose_stamped.header.frame_id = 'base_link'
                 pose_stamped.pose = self._im_server.get('gripper').pose
-                kwargs = {
-                    'allowed_planning_time': 15,
-                    'execution_timeout': 40,
-                    'num_planning_attempts': 5,
-                    'replan': False
-                }
-                error = self._arm.move_to_pose(pose_stamped, **kwargs)
-                if error is not None:
-                    rospy.logerr('Pose failed: {}'.format(error))
-                else:
-                    rospy.loginfo('Pose succeeded')
+                # kwargs = {
+                #     'allowed_planning_time': 15,
+                #     'execution_timeout': 40,
+                #     'num_planning_attempts': 5,
+                #     'replan': False
+                # }
+                # error = self._arm.move_to_pose(pose_stamped, **kwargs)
+                # if error is not None:
+                #     rospy.logerr('Pose failed: {}'.format(error))
+                # else:
+                #     rospy.loginfo('Pose succeeded')
+                self._arm.move_to_pose_ik(pose_stamped)
             elif idx == 2:
                 rospy.loginfo('open')
                 self._gripper.open()
@@ -179,11 +182,12 @@ class GripperTeleop(object):
             pose_stamped = PoseStamped()
             pose_stamped.header.frame_id = 'base_link'
             pose_stamped.pose = im.pose
+            print(pose_stamped)
             ok = self._arm.compute_ik(pose_stamped, print=False)
-            if ok:
-                rospy.loginfo("ik ok")
-            else:
-                rospy.loginfo('ik bad')
+            # if ok:
+            #     rospy.loginfo("ik ok")
+            # else:
+            #     rospy.loginfo('ik bad')
             markers = im.controls[0].markers
             for m in markers:
                 if ok:
@@ -261,20 +265,20 @@ class AutoPickTeleop(object):
         return poses
 
     def _handle_move(self):
-        def move_to_pose(pose_stamped: PoseStamped, oc: OrientationConstraint = None):
-            kwargs = {
-                'allowed_planning_time': 10,
-                'execution_timeout': 20,
-                'num_planning_attempts': 10,
-                'tolerance': 0.1,
-                'replan': True
-            }   
-            error = self._arm.move_to_pose(pose_stamped, orientation_constraint=oc, **kwargs)
-            if error is not None:
-                rospy.logerr('Pose failed: {}'.format(error))
-            else:
-                rospy.loginfo('Pose succeeded')
-            rospy.sleep(2)
+        # def move_to_pose(pose_stamped: PoseStamped, oc: OrientationConstraint = None):
+        #     kwargs = {
+        #         'allowed_planning_time': 10,
+        #         'execution_timeout': 20,
+        #         'num_planning_attempts': 10,
+        #         'tolerance': 0.1,
+        #         'replan': True
+        #     }   
+        #     error = self._arm.move_to_pose(pose_stamped, orientation_constraint=oc, **kwargs)
+        #     if error is not None:
+        #         rospy.logerr('Pose failed: {}'.format(error))
+        #     else:
+        #         rospy.loginfo('Pose succeeded')
+        #     rospy.sleep(2)
 
         rospy.loginfo('move')
         
@@ -282,21 +286,26 @@ class AutoPickTeleop(object):
         
         # Move to pre-grip unconstrained
         self._gripper.open()
-        move_to_pose(pre)
+        # move_to_pose(pre)
+        self._arm.move_to_pose_ik(pre)
+        # rospy.sleep(3)
         # Move to grip constrained by plane
-        oc = OrientationConstraint()
-        oc.header.frame_id = 'base_link'
-        oc.link_name = 'wrist_roll_link'
-        oc.orientation = pre.pose.orientation
-        oc.absolute_x_axis_tolerance = 0.2
-        oc.absolute_y_axis_tolerance = 0.2
-        oc.absolute_z_axis_tolerance = 3.14
-        oc.weight = 1.0
-        move_to_pose(grip, oc=oc)
+        # oc = OrientationConstraint()
+        # oc.header.frame_id = 'base_link'
+        # oc.link_name = 'wrist_roll_link'
+        # oc.orientation = pre.pose.orientation
+        # oc.absolute_x_axis_tolerance = 0.2
+        # oc.absolute_y_axis_tolerance = 0.2
+        # oc.absolute_z_axis_tolerance = 3.14
+        # oc.weight = 1.0
+        # move_to_pose(grip, oc=oc)
+        self._arm.move_to_pose_ik(grip)
+        # rospy.sleep(2)
         self._gripper.close()
+        rospy.sleep(1)
         # Move to lift constrained by object orientation
-        move_to_pose(lift, oc=oc)
-
+        # move_to_pose(lift, oc=oc)
+        self._arm.move_to_pose_ik(lift)
 
     def handle_feedback(self, feedback):
         if feedback.event_type == InteractiveMarkerFeedback.MENU_SELECT:
