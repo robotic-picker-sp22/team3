@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     return 1;                                                                           
   } catch (tf::ExtrapolationException& e) {                                             
     std::cerr << e.what() << std::endl;                                                 
-    return 1;                                                                           
+    return 1;                                                         
   }                                                                                     
                                                                                           
   sensor_msgs::PointCloud2 cloud_out;                                                   

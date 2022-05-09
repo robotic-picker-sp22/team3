@@ -13,11 +13,14 @@ void SegmentBinObjects(PointCloudC::Ptr cloud, std::vector<pcl::PointIndices>* i
     int min_cluster_size, max_cluster_size;
     ros::param::param("ec_cluster_tolerance", cluster_tolerance, 0.01);
     ros::param::param("ec_min_cluster_size", min_cluster_size, 10);
-    ros::param::param("ec_max_cluster_size", max_cluster_size, 10000);
-
+    ros::param::param("ec_max_cluster_size", max_cluster_size, 20000);
+    ROS_INFO("Tolerance: %f", cluster_tolerance);
+    ROS_INFO("Min cluster: %d", min_cluster_size);
+    ROS_INFO("Max cluster: %d", max_cluster_size);
+    ROS_INFO("Cloud size %ld", cloud->size());
     // pcl::PointIndices inside_bin_indices;
     // Cloud2Indices(cloud, &inside_bin_indices);
-
+    ROS_INFO("Got params");
     pcl::EuclideanClusterExtraction<PointC> euclid;
     euclid.setInputCloud(cloud);
     // euclid.setIndices(&inside_bin_indices); // << TODO: is cloud already cropped or do we get indices for the crop?
@@ -25,6 +28,7 @@ void SegmentBinObjects(PointCloudC::Ptr cloud, std::vector<pcl::PointIndices>* i
     euclid.setMinClusterSize(min_cluster_size);
     euclid.setMaxClusterSize(max_cluster_size);
     euclid.extract(*indices);
+    ROS_INFO("Finished extracting");
 
     // Find the size of the smallest and the largest object,
     // where size = number of points in the cluster
@@ -55,34 +59,38 @@ void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
     float min_x, min_y, min_z;
     max_x = max_y = max_z = std::numeric_limits<float>::min();
     min_x = min_y = min_z = std::numeric_limits<float>::max();
-
+    ROS_INFO("Getting points");
     for (auto& point : cloud->points) {
         max_x = std::max(max_x, point.x);
-        max_y = std::max(max_x, point.y);
-        max_z = std::max(max_x, point.z);
+        max_y = std::max(max_y, point.y);
+        max_z = std::max(max_z, point.z);
 
         min_x = std::min(min_x, point.x);
-        min_y = std::min(min_x, point.y);
-        min_z = std::min(min_x, point.z);
+        min_y = std::min(min_y, point.y);
+        min_z = std::min(min_z, point.z);
     }
 
-    pose->position.x = min_x;
-    pose->position.x = min_y;
-    pose->position.x = min_z;
+    pose->position.x = (min_x + max_x) / 2;
+    pose->position.y = (min_y + max_y) / 2;
+    pose->position.z = (min_z + max_z) / 2;
     dimensions->x = max_x - min_x;
     dimensions->y = max_y - min_y;
     dimensions->z = max_z - min_z;
 }
 
 Segmenter::Segmenter(const ros::Publisher& marker_pub)
-    : marker_pub_(marker_pub) {}
+    : marker_pub_(marker_pub) {
+        ROS_INFO("Created Segmenter");
+    }
 
 void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
+    ROS_INFO("In Segementer Callback");
     PointCloudC::Ptr cloud(new PointCloudC());
     pcl::fromROSMsg(msg, *cloud);
     std::vector<pcl::PointIndices> object_indices;
+    ROS_INFO("In Segementer Callback");
     SegmentBinObjects(cloud, &object_indices);
-
+    
     for (size_t i = 0; i < object_indices.size(); ++i) {
         // Reify indices into a point cloud of the object.
         pcl::PointIndices::Ptr indices(new pcl::PointIndices);
@@ -105,6 +113,7 @@ void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
         object_marker.color.g = 1;
         object_marker.color.a = 0.3;
         marker_pub_.publish(object_marker);
+        ROS_INFO("Published Marker");
     }
 }
 }  // namespace perception

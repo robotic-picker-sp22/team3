@@ -6,6 +6,7 @@
 #include "pcl/segmentation/extract_clusters.h"
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Vector3.h"
+#include "visualization_msgs/Marker.h"
 
 namespace perception {
 

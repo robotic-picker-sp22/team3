@@ -24,10 +24,10 @@ int main(int argc, char** argv) {
   
   // Segmenter
   ros::Publisher segment_pub =
-      nh.advertise<sensor_msgs::PointCloud2>("segment_cloud", 1, true);
+      nh.advertise<visualization_msgs::Marker>("segment_cloud", 1, true);
   perception::Segmenter segmenter(segment_pub);
   ros::Subscriber segment_sub =
-      nh.subscribe("cloud_in", 1, &perception::Segmenter::Callback, &segmenter);
+      nh.subscribe("downsampled_cloud", 1, &perception::Segmenter::Callback, &segmenter);
   
   
   ros::spin();
