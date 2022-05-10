@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(perception)
+project(perception_msgs)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,24 +8,18 @@ project(perception)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  # Cloud saver requirements
-  pcl_ros
-  rosbag
-  sensor_msgs
-  perception_msgs
-  tf
+  message_generation
+  message_runtime
 )
 
-# System dependencies are found with CMake's conventions
+## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-catkin_python_setup()
+# catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -52,11 +46,10 @@ catkin_python_setup()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  ObjectFeatures.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -73,10 +66,9 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -108,15 +100,10 @@ catkin_python_setup()
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-#  LIBRARIES perception
-#  CATKIN_DEPENDS roscpp rospy
+#  INCLUDE_DIRS include
+#  LIBRARIES perception_msgs
+ CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
-  LIBRARIES
-    perception_crop
-    perception_downsample
-    perception_segmentation
-    perception_feature_extraction
 )
 
 ###########
@@ -126,13 +113,13 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include
+# include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/perception.cpp
+#   src/${PROJECT_NAME}/perception_msgs.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -143,7 +130,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/perception_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/perception_msgs_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -166,47 +153,7 @@ include_directories(
 
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-add_executable(perception_save_cloud_main src/save_cloud_main.cpp)
-set_target_properties(perception_save_cloud_main PROPERTIES OUTPUT_NAME save_cloud PREFIX "")
-add_dependencies(perception_save_cloud_main ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(perception_save_cloud_main
-   ${catkin_LIBRARIES}
-)
-add_executable(perception_point_cloud_demo src/point_cloud_demo.cpp)
-set_target_properties(perception_point_cloud_demo PROPERTIES OUTPUT_NAME point_cloud_demo PREFIX "")
-add_dependencies(perception_point_cloud_demo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(perception_point_cloud_demo
-  perception_crop
-  perception_downsample
-  perception_segmentation
-  ${catkin_LIBRARIES}
-)
-add_executable(perception_extract_features src/extract_features_main.cpp)
-set_target_properties(perception_extract_features PROPERTIES OUTPUT_NAME extract_features PREFIX "")
-add_dependencies(perception_extract_features ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(perception_extract_features
-  perception_segmentation
-  perception_feature_extraction
-  ${catkin_LIBRARIES}
-)
 
-add_library(perception_crop src/crop.cpp)
-add_dependencies(perception_crop ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(perception_crop ${catkin_LIBRARIES})
-
-add_library(perception_downsample src/downsample.cpp)
-add_dependencies(perception_downsample ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(perception_downsample ${catkin_LIBRARIES})
-
-add_library(perception_segmentation src/segmentation.cpp)
-add_dependencies(perception_segmentation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(perception_segmentation ${catkin_LIBRARIES})
-
-add_library(perception_feature_extraction src/feature_extraction.cpp)
-add_dependencies(perception_feature_extraction ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(perception_feature_extraction ${catkin_LIBRARIES})
-
-#
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 # catkin_install_python(PROGRAMS
@@ -247,7 +194,7 @@ target_link_libraries(perception_feature_extraction ${catkin_LIBRARIES})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_perception.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_perception_msgs.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

@@ -7,7 +7,7 @@ from robot_api import Gripper, Arm
 from sensor_msgs.msg import JointState
 from tf2_ros import TransformListener, Buffer, LookupException, ConnectivityException, ExtrapolationException
 
-EE_LINK = 'gripper_link'
+EE_LINK = 'wrist_roll_link'
 
 class CommandLineApp(object):
 

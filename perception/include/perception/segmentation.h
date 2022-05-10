@@ -7,6 +7,7 @@
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Vector3.h"
 #include "visualization_msgs/Marker.h"
+#include "perception/object.h"
 
 namespace perception {
 
@@ -17,6 +18,15 @@ void SegmentBinObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
 void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                                geometry_msgs::Pose* pose,
                                geometry_msgs::Vector3* dimensions);
+
+// Does a complete bin segmentation pipeline.
+//
+// Args:
+//  cloud: The point cloud with the bin and the objects in it.
+//  objects: The output objects.
+void SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                          std::vector<Object>* objects);
+
 class Segmenter {
  public:
   Segmenter(const ros::Publisher& marker_pub);
