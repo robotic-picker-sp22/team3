@@ -55,22 +55,23 @@ void ObjectRecognizer::Recognize(const Object& object, std::string* name,
                                  double* confidence) {
   // TODO: extract features from the object
   perception_msgs::ObjectFeatures features; 
-  perception::ExtractSizeFeatures(object, &features);
+  perception::ExtractFeatures(object, &features);
 
   double min_distance = std::numeric_limits<double>::max();
   double second_min_distance = std::numeric_limits<double>::max();
   for (size_t i = 0; i < dataset_.size(); ++i) {
     // TODO: compare the features of the input object to the features of the current dataset object.
     // For each feature in object, find corresponding feature in the dataset
-    std::vector<double> compare;
-    for (std::string name : features.names) {
-        std::vector<std::string> other_names = dataset_[i].names;
-        auto it = find(other_names.begin(), other_names.end(), name);
-        if (it != other_names.end()) {
-            int index = it - other_names.begin();
-            compare.push_back(dataset_[i].values[index]);
-        }
-    }
+    // std::vector<double> compare;
+    // for (std::string name : features.names) {
+    //     std::vector<std::string> other_names = dataset_[i].names;
+    //     auto it = find(other_names.begin(), other_names.end(), name);
+    //     if (it != other_names.end()) {
+    //         int index = it - other_names.begin();
+    //         compare.push_back(dataset_[i].values[index]);
+    //     }
+    // }
+    std::vector<double> compare = dataset_[i].values;
     double distance = EuclideanDistance(features.values, compare);
     if (distance < min_distance) {
       second_min_distance = min_distance;
