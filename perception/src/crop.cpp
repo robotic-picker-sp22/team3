@@ -3,18 +3,50 @@
 #include "pcl/filters/crop_box.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "pcl/common/common.h"
+#include "pcl_ros/transforms.h"
+#include "tf/transform_listener.h"
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 
 namespace perception {
-    Cropper::Cropper(const ros::Publisher& pub) : pub_(pub) {}
+    Cropper::Cropper(const ros::Publisher& pub) : pub_(pub) {
+        // tf::TransformListener listener;
+        // if (!getenv('ROBOT')) {
+        //     ROS_INFO('Transforming crop...');
+        //     listener.waitForTransform('base_link', 'head_camera_depth_frame');
+        //     listener.lookupTransform('base_link', 'head_camera_depth_frame', ros::Time(0), transform_);
+        // } else {
+        //     listener.waitForTransform('base_link', 'base_link');
+        //     listener.lookupTransform('base_link', 'base_link', ros::Time(0), transform_);
+        // }
+    }
+
+    void transform_cloud(const sensor_msgs::PointCloud2& cloud_in, sensor_msgs::PointCloud2& cloud_out) {
+        tf::TransformListener tf_listener;                                                 
+        tf_listener.waitForTransform("base_link", cloud_in.header.frame_id,                     
+                                    ros::Time(0), ros::Duration(5.0));                       
+        tf::StampedTransform transform;                                                       
+        try {                                                                                 
+            tf_listener.lookupTransform("base_link", cloud_in.header.frame_id,                    
+                                        ros::Time(0), transform);                               
+        } catch (tf::LookupException& e) {                                                    
+            std::cerr << e.what() << std::endl;                                                 
+            return;                                                                           
+        } catch (tf::ExtrapolationException& e) {                                             
+            std::cerr << e.what() << std::endl;                                                 
+            return;                                                         
+        }                                                                                                                                                                     
+        pcl_ros::transformPointCloud("base_link", transform, cloud_in, cloud_out);
+    }
 
     void Cropper::Callback(const sensor_msgs::PointCloud2& msg) {
-        PointCloudC::Ptr cloud(new PointCloudC());
-        pcl::fromROSMsg(msg, *cloud);
-        ROS_INFO("Got point cloud with %ld points", cloud->size());
-
         PointCloudC::Ptr cropped_cloud(new PointCloudC());
+        sensor_msgs::PointCloud2 transformed_cloud;
+        transform_cloud(msg, transformed_cloud);  
+
+        PointCloudC::Ptr cloud(new PointCloudC()); 
+        pcl::fromROSMsg(transformed_cloud, *cloud);     
+        ROS_INFO("Got point cloud with %ld points", cloud->size());                                           
     
         double min_x, min_y, min_z, max_x, max_y, max_z;
         ros::param::param("crop_min_x", min_x, 0.3);

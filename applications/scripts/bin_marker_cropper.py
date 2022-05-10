@@ -16,6 +16,8 @@ class BinMarkerCropper(object):
 
     def __init__(self):
         rospy.Subscriber(TAG_POSE_TOPIC, AlvarMarkers, self._tag_pose_callback)
+        rospy.loginfo('bin marker cropper initialized.')
+
     
 
     def _tag_pose_callback(self, msg):
@@ -23,18 +25,21 @@ class BinMarkerCropper(object):
         about the location of each AR tag.
         '''
         self.markers = msg.markers
+        # rospy.loginfo(f'found {len(self.markers)} markers.')
+        self.crop_for_marker()
 
 
-    def wait_for_markers(self):
-        ''' Hangs until this receives markers for the AR tags.
-        '''
-        rospy.loginfo('waiting for markers...')
-        while len(self.markers) == 0:
-            rospy.sleep(0.1)
-        rospy.loginfo('received markers.')
+    # def wait_for_markers(self):
+    #     ''' Hangs until this receives markers for the AR tags.
+    #     '''
+    #     rospy.loginfo('waiting for markers...')
+    #     while len(self.markers) == 0:
+    #         rospy.sleep(0.1)
+    #     rospy.loginfo('received markers.')
 
 
     def _crop(self, x, y, z):
+        rospy.loginfo(f'cropping to ({x}, {y}, {z})')
         DEFAULT_WID = 0.4
         DEFAULT_HEI = 0.1
         DEFAULT_DEP = 0.1
@@ -44,7 +49,7 @@ class BinMarkerCropper(object):
         max_x = x + DEFAULT_WID/2 
         max_y = y + DEFAULT_HEI/2 
         max_z = z + DEFAULT_DEP/2 
-        rospy.set_param("crop_min_x", min_x)
+        rospy.set_param("crop_min_x", min_x)    
         rospy.set_param("crop_min_y", min_y)
         rospy.set_param("crop_min_z", min_z)
         rospy.set_param("crop_max_x", max_x)
@@ -54,23 +59,24 @@ class BinMarkerCropper(object):
 
 
     def crop_for_marker(self):
+        if len(self.markers) < 1:
+            rospy.logerr('Could not find any markers!')
         for marker in self.markers:
             assert(marker.header.frame_id == '/base_link')
             p = marker.pose.pose.position
             self._crop(p.x, p.y, p.z)
             return
-        rospy.logerr('Failed to move to any markers!')
+        rospy.logerr('Failed to find any markers!')
 
 
 def main():
-    rospy.init_node('hallunicated_reach')
+    rospy.init_node('bin_marker_cropper')
     from arm_demo import wait_for_time
     wait_for_time()
 
     cropper = BinMarkerCropper()
-    cropper.wait_for_markers()
-    while True:
-        cropper.crop_for_marker()
+    rospy.loginfo('spinning...')
+    rospy.spin()
 
 
 if __name__ == "__main__":

@@ -11,5 +11,6 @@ class Cropper {
 
  private:
   ros::Publisher pub_;
+  // tf::StampedTransform transform_;
 };
 }  // namespace perception
