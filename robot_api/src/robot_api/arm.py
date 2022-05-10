@@ -218,7 +218,7 @@ class Arm(object):
                 idx = joint_names.index(name)
                 joint_vals[idx] = position
         arm_joints = ArmJoints.from_list(joint_vals)
-        self.move_to_joints(arm_joints, timeout=2)
+        self.move_to_joints(arm_joints, timeout=5)
         return True
 
     def move_to_joints(self, arm_joints: ArmJoints, timeout=TIME_FROM_START):
