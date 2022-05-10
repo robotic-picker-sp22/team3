@@ -222,9 +222,9 @@ class AutoPickTeleop(object):
         gripper_ctrl = InteractiveMarkerControl()
         gripper_ctrl.interaction_mode = InteractiveMarkerControl.BUTTON
         gripper_ctrl.always_visible = True
-        gripper_ctrl.markers.extend(gripper_markers(x=-0.1))  # pre-grasp
+        gripper_ctrl.markers.extend(gripper_markers(x=-0.2))  # pre-grasp
         gripper_ctrl.markers.extend(gripper_markers())  # grasp
-        gripper_ctrl.markers.extend(gripper_markers(z = 0.2))  # lift
+        gripper_ctrl.markers.extend(gripper_markers(x=-0.2, z = 0.2))  # lift
         gripper_im.controls.append(gripper_ctrl)
         # Get 6DOF controlls and append to interactive marker
         controls = make_6dof_controls()
@@ -248,8 +248,8 @@ class AutoPickTeleop(object):
         matrix = tft.quaternion_matrix(quaternion=quaternion)
         # Offsets from wrist_link_pose
         grip = [-0.166, 0, 0.0, 1]
-        pre =  [-0.266, 0, 0.0, 1]
-        lift = [-0.166, 0, 0.2, 1]
+        pre =  [-0.366, 0, 0.0, 1]
+        lift = [-0.366, 0, 0.2, 1]
         # Translate offsets from wrist_link frame to base_link frame
         poses = []
         for wl_pose in [pre, grip, lift]:
@@ -300,8 +300,9 @@ class AutoPickTeleop(object):
         # oc.weight = 1.0
         # move_to_pose(grip, oc=oc)
         self._arm.move_to_pose_ik(grip)
-        # rospy.sleep(2)
         self._gripper.close()
+        self._arm.move_to_pose_ik(pre)
+        # rospy.sleep(2)
         rospy.sleep(1)
         # Move to lift constrained by object orientation
         # move_to_pose(lift, oc=oc)

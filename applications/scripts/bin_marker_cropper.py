@@ -40,15 +40,17 @@ class BinMarkerCropper(object):
 
     def _crop(self, x, y, z):
         rospy.loginfo(f'cropping to ({x}, {y}, {z})')
-        DEFAULT_WID = 0.4
-        DEFAULT_HEI = 0.1
-        DEFAULT_DEP = 0.1
-        min_x = x - DEFAULT_WID/2
-        min_y = y - DEFAULT_HEI/2
-        min_z = z - DEFAULT_DEP/2
-        max_x = x + DEFAULT_WID/2 
-        max_y = y + DEFAULT_HEI/2 
-        max_z = z + DEFAULT_DEP/2 
+        y += -0.14
+        z += -0.08
+        DEFAULT_WID = 0.24
+        DEFAULT_HEI = 0.24
+        DEFAULT_DEP = 1
+        min_x = x - DEFAULT_DEP/2
+        min_y = y - DEFAULT_WID/2
+        min_z = z - DEFAULT_HEI/2
+        max_x = x + DEFAULT_DEP/2 
+        max_y = y + DEFAULT_WID/2 
+        max_z = z + DEFAULT_HEI/2 
         rospy.set_param("crop_min_x", min_x)    
         rospy.set_param("crop_min_y", min_y)
         rospy.set_param("crop_min_z", min_z)
