@@ -4,8 +4,10 @@ project(applications)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
+find_package(
+  catkin REQUIRED COMPONENTS
   roscpp
+  moveit_msgs
   rospy
 )
 
@@ -101,7 +103,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES applications
-#  CATKIN_DEPENDS roscpp rospy
+ CATKIN_DEPENDS moveit_msgs
 #  DEPENDS system_lib
 )
 
@@ -113,6 +115,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include ${moveit_msgs_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
 
