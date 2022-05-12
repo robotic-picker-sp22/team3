@@ -24,7 +24,8 @@ int main(int argc, char** argv) {
   
   sensor_msgs::PointCloud2ConstPtr cloud =
     ros::topic::waitForMessage<sensor_msgs::PointCloud2>(
-        "head_camera/depth_registered/points");
+        // "head_camera/depth_registered/points");
+        "/cropped_cloud");
 
   tf::TransformListener tf_listener;                                                    
   tf_listener.waitForTransform("base_link", cloud->header.frame_id,                     
