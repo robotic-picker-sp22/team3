@@ -59,6 +59,27 @@ class BinMarkerCropper(object):
         rospy.set_param("crop_max_z", max_z)
 
 
+    def _crop_dims(self, x, y, z, w, h, d):
+        rospy.loginfo(f'cropping to ({x}, {y}, {z})')
+        y += -0.14
+        z += -0.08
+        DEFAULT_WID = w
+        DEFAULT_HEI = h
+        DEFAULT_DEP = d
+        min_x = x - DEFAULT_DEP/2
+        min_y = y - DEFAULT_WID/2
+        min_z = z - DEFAULT_HEI/2
+        max_x = x + DEFAULT_DEP/2 
+        max_y = y + DEFAULT_WID/2 
+        max_z = z + DEFAULT_HEI/2 
+        rospy.set_param("crop_min_x", min_x)    
+        rospy.set_param("crop_min_y", min_y)
+        rospy.set_param("crop_min_z", min_z)
+        rospy.set_param("crop_max_x", max_x)
+        rospy.set_param("crop_max_y", max_y)
+        rospy.set_param("crop_max_z", max_z)
+
+
 
     def crop_for_marker(self):
         if len(self.markers) < 1:
@@ -69,6 +90,10 @@ class BinMarkerCropper(object):
             self._crop(p.x, p.y, p.z)
             return
         rospy.logerr('Failed to find any markers!')
+
+    
+    # def crop_shelf_for_marker(self, shelf):
+        
 
 
 def main():

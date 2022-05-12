@@ -7,6 +7,18 @@
 #include <math.h>
 #include <sstream>
 #include "perception/object_recognizer.h"
+#include <pcl/segmentation/region_growing.h>
+#include <iostream>
+#include <vector>
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/search/search.h>
+#include <pcl/search/kdtree.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/segmentation/region_growing.h>
+#include <pcl/segmentation/region_growing_rgb.h>
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
@@ -32,6 +44,9 @@ void SegmentObjects(PointCloudC::Ptr cloud,
         GetAxisAlignedBoundingBox(object.cloud, &(object.pose), &(object.dimensions));
         objects->push_back(object);
     }
+    // struct Object object;
+    // GetAxisAlignedBoundingBox(cloud, &(object.pose), &(object.dimensions));
+    // objects->push_back(object);
     ROS_INFO("Finished with segmentobjects");
 }
 
@@ -55,6 +70,30 @@ void SegmentBinObjects(PointCloudC::Ptr cloud, std::vector<pcl::PointIndices>* i
     euclid.setMinClusterSize(min_cluster_size);
     euclid.setMaxClusterSize(max_cluster_size);
     euclid.extract(*indices);
+
+    // pcl::search::Search<PointC>::Ptr tree(new pcl::search::KdTree<PointC>);
+    // pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+    // pcl::NormalEstimation<PointC, pcl::Normal> normal_estimator;
+    // normal_estimator.setSearchMethod(tree);
+    // normal_estimator.setInputCloud(cloud);
+    // normal_estimator.setKSearch(50);
+    // normal_estimator.compute(*normals);
+    // pcl::RegionGrowing<PointC, pcl::Normal> clustering;
+    // clustering.setSearchMethod(tree);
+    // clustering.setNumberOfNeighbours(30);
+    // clustering.setInputCloud(cloud);
+    // // clustering.setIndices (indices);
+    // clustering.setInputNormals(normals);
+    // clustering.setSmoothnessThreshold(2.5 / 180.0 * M_PI);
+    // clustering.setCurvatureThreshold(1.0);
+
+    // pcl::RegionGrowingRGB<PointC> clustering;
+    // clustering.setInputCloud(cloud);
+    // clustering.setSearchMethod(tree);
+    // clustering.setDistanceThreshold(0.02);
+    // clustering.setPointColorThreshold(6);
+    // clustering.setRegionColorThreshold(5);
+
     // ROS_INFO("Finished extracting");
 
     // Find the size of the smallest and the largest object,
@@ -103,9 +142,12 @@ void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
     dimensions->x = max_x - min_x;
     dimensions->y = max_y - min_y;
     dimensions->z = max_z - min_z;
-    // ROS_INFO("dimensions->x %lf", dimensions->x);
-    // ROS_INFO("dimensions->y %lf", dimensions->y);
-    // ROS_INFO("dimensions->z %lf", dimensions->z);
+    ROS_INFO("position->x %lf", pose->position.x);
+    ROS_INFO("position->y %lf", pose->position.y);
+    ROS_INFO("position->z %lf", pose->position.y);
+    ROS_INFO("dimensions->x %lf", dimensions->x);
+    ROS_INFO("dimensions->y %lf", dimensions->y);
+    ROS_INFO("dimensions->z %lf", dimensions->z);
 }
 
 // Segmenter::Segmenter(const ros::Publisher& marker_pub)
@@ -131,8 +173,10 @@ void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
 
     std::vector<Object> objects;
     SegmentObjects(cloud, &objects);
+    ROS_INFO("Back in callback");
     
     for (size_t i = 0; i < objects.size(); ++i) {
+        ROS_INFO("making mark %ld", i);
         // // Reify indices into a point cloud of the object.
         // pcl::PointIndices::Ptr indices(new pcl::PointIndices);
         // *indices = object_indices[i];
@@ -149,7 +193,7 @@ void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
         visualization_msgs::Marker object_marker;
         object_marker.ns = "objects";
         object_marker.id = i;
-        object_marker.header.frame_id = "base_link";
+        object_marker.header.frame_id = "ar_marker_15";
         object_marker.type = visualization_msgs::Marker::CUBE;
         object_marker.pose = object.pose;
         object_marker.scale = object.dimensions;
@@ -172,7 +216,7 @@ void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
         visualization_msgs::Marker name_marker;
         name_marker.ns = "recognition";
         name_marker.id = i;
-        name_marker.header.frame_id = "base_link";
+        name_marker.header.frame_id = "ar_marker_15";
         name_marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
         name_marker.pose.position = object.pose.position;
         name_marker.pose.position.z += 0.1;
