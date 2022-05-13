@@ -121,39 +121,25 @@ void Cloud2Indices(const PointCloudC::Ptr cloud, pcl::PointIndices* indices) {
 void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                                geometry_msgs::Pose* pose,
                                geometry_msgs::Vector3* dimensions) {
-    float max_x, max_y, max_z;
-    float min_x, min_y, min_z;
-    max_x = max_y = max_z = std::numeric_limits<float>::min();
-    min_x = min_y = min_z = std::numeric_limits<float>::max();
-    // ROS_INFO("Getting points");
-    for (auto& point : cloud->points) {
-        max_x = std::max(max_x, point.x);
-        max_y = std::max(max_y, point.y);
-        max_z = std::max(max_z, point.z);
+    PointC min_pcl;
+    PointC max_pcl;
+    pcl::getMinMax3D<PointC>(*cloud, min_pcl, max_pcl);
 
-        min_x = std::min(min_x, point.x);
-        min_y = std::min(min_y, point.y);
-        min_z = std::min(min_z, point.z);
-    }
-
-    pose->position.x = (min_x + max_x) / 2;
-    pose->position.y = (min_y + max_y) / 2;
-    pose->position.z = (min_z + max_z) / 2;
-    dimensions->x = max_x - min_x;
-    dimensions->y = max_y - min_y;
-    dimensions->z = max_z - min_z;
-    ROS_INFO("position->x %lf", pose->position.x);
-    ROS_INFO("position->y %lf", pose->position.y);
-    ROS_INFO("position->z %lf", pose->position.y);
-    ROS_INFO("dimensions->x %lf", dimensions->x);
-    ROS_INFO("dimensions->y %lf", dimensions->y);
-    ROS_INFO("dimensions->z %lf", dimensions->z);
+    pose->position.x = (min_pcl.x + max_pcl.x) / 2;
+    pose->position.y = (min_pcl.y + max_pcl.y) / 2;
+    pose->position.z = (min_pcl.z + max_pcl.z) / 2;
+    dimensions->x = max_pcl.x - min_pcl.x;
+    dimensions->y = max_pcl.y - min_pcl.y;
+    dimensions->z = max_pcl.z - min_pcl.z;
+    // ROS_INFO("Min: x=%lf, y=%lf, z=%lf", min_pcl.x, min_pcl.y, min_pcl.z);
+    // ROS_INFO("Max: x=%lf, y=%lf, z=%lf", max_pcl.x, max_pcl.y, max_pcl.z);
+    // ROS_INFO("position->x %lf", pose->position.x);
+    // ROS_INFO("position->y %lf", pose->position.y);
+    // ROS_INFO("position->z %lf", pose->position.y);
+    // ROS_INFO("dimensions->x %lf", dimensions->x);
+    // ROS_INFO("dimensions->y %lf", dimensions->y);
+    // ROS_INFO("dimensions->z %lf", dimensions->z);
 }
-
-// Segmenter::Segmenter(const ros::Publisher& marker_pub)
-//     : marker_pub_(marker_pub) {
-//         ROS_INFO("Created Segmenter");
-//     }
 
 Segmenter::Segmenter(const ros::Publisher& points_pub,
                     const ros::Publisher& marker_pub,
