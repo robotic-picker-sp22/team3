@@ -1,0 +1,2 @@
+string[] names
+geometry_msgs/PoseStamped[] poses

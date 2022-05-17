@@ -8,10 +8,10 @@ rosparam set crop_max_z .2
 rosparam set crop_min_z -0.28
 
 
-# base_link (untested)
-rosparam set crop_min_z 1.2
-rosparam set crop_max_z 1.3
-rosparam set crop_max_y 0.4
-rosparam set crop_min_y 0.2
-rosparam set crop_max_x 1
-rosparam set crop_min_x .7
+# base_link 
+# rosparam set crop_min_z 1.2
+# rosparam set crop_max_z 1.3
+# rosparam set crop_max_y 0.4
+# rosparam set crop_min_y 0.2
+# rosparam set crop_max_x 1
+# rosparam set crop_min_x .7

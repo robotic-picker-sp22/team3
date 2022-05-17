@@ -3,6 +3,7 @@
 #include "ros/ros.h"
 #include "sensor_msgs/PointCloud2.h"
 #include "perception/segmentation.h"
+#include "perception_msgs/ObjectPose.h"
 
 int main(int argc, char** argv) {
 
@@ -37,12 +38,9 @@ int main(int argc, char** argv) {
 
   // Segmenter
   // TODO: figure out the publishers for the segmenter
-  ros::Publisher points_pub =
-      nh.advertise<visualization_msgs::Marker>("points_pub", 1, true);
-  ros::Publisher segment_pub =
-      nh.advertise<visualization_msgs::Marker>("segment_cloud", 1, true);
-  perception::Segmenter segmenter(points_pub, segment_pub,
-                                  recognizer);
+  ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("object_markers", 1, true);
+  ros::Publisher object_pub = nh.advertise<perception_msgs::ObjectPose>("object_pose", 1, true);
+  perception::Segmenter segmenter(marker_pub, object_pub, recognizer);
   ros::Subscriber segment_sub =
       nh.subscribe("cropped_cloud", 1, &perception::Segmenter::Callback, &segmenter);
   

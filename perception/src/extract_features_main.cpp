@@ -68,19 +68,19 @@ int main(int argc, char** argv) {
     if (cloud == NULL) {
       std::cerr << "Unable to instantiate point cloud." << std::endl;
       return 1;
-    }
+    } 
     pcl::fromROSMsg(*cloud, *pcl_cloud);
     break;
   }
 
-  PointCloudC::Ptr cropped_cloud(new PointCloudC());
-  Crop(pcl_cloud, cropped_cloud);
+  // PointCloudC::Ptr cropped_cloud(new PointCloudC());
+  // Crop(pcl_cloud, cropped_cloud);
+  // ROS_INFO("Segmenting point cloud with %ld points", cropped_cloud->size());
 
   std::vector<perception::Object> objects;
-  perception::SegmentObjects(cropped_cloud, &objects);
+  perception::SegmentObjects(pcl_cloud, &objects);
   if (objects.size() != 1) {
-    std::cerr << "Expected to see exactly one object, found " << objects.size()
-              << std::endl;
+    ROS_ERROR("%s: expected to see exactly one object, found %d", label.c_str(), objects.size());
     return 1;
   }
 

@@ -7,6 +7,7 @@
 #include <math.h>
 #include <sstream>
 #include "perception/object_recognizer.h"
+#include "perception_msgs/ObjectPose.h"
 #include <pcl/segmentation/region_growing.h>
 #include <iostream>
 #include <vector>
@@ -19,83 +20,71 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/segmentation/region_growing.h>
 #include <pcl/segmentation/region_growing_rgb.h>
+#include "geometry_msgs/PoseStamped.h"
+using namespace perception;
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 
-namespace perception {
-
-void SegmentObjects(PointCloudC::Ptr cloud,
-                          std::vector<Object>* objects) {
-    // Same as callback, but with visualization code removed.
-    std::vector<pcl::PointIndices> object_indices;
-    SegmentBinObjects(cloud, &object_indices);
-
-    for (int i = 0; i < object_indices.size(); i++) {
-        struct Object object;
-        pcl::ExtractIndices<PointC> extract;
-        pcl::PointIndices::Ptr indices(new pcl::PointIndices);
-        *indices = object_indices[i];
-        extract.setInputCloud(cloud);
-        extract.setIndices(indices);
-        PointCloudC::Ptr object_cloud(new PointCloudC());
-        extract.filter(*object_cloud);
-        object.cloud = object_cloud;
-        GetAxisAlignedBoundingBox(object.cloud, &(object.pose), &(object.dimensions));
-        objects->push_back(object);
+void Cloud2Indices(const PointCloudC::Ptr cloud, pcl::PointIndices* indices) {
+    for (size_t i=0; i<indices->indices.size(); ++i) {
+        int index = indices->indices[i];
+        const PointC& pt = cloud->points[index];
     }
-    // struct Object object;
-    // GetAxisAlignedBoundingBox(cloud, &(object.pose), &(object.dimensions));
-    // objects->push_back(object);
-    ROS_INFO("Finished with segmentobjects");
-}
+}   
 
-void SegmentBinObjects(PointCloudC::Ptr cloud, std::vector<pcl::PointIndices>* indices) {
+void SegmentBinObjects(PointCloudC::Ptr cloud, std::vector<pcl::PointIndices>* indices, int algo) {
         double cluster_tolerance;
     int min_cluster_size, max_cluster_size;
     ros::param::param("ec_cluster_tolerance", cluster_tolerance, 0.02);
-    ros::param::param("ec_min_cluster_size", min_cluster_size, 10);
+    ros::param::param("ec_min_cluster_size", min_cluster_size, 100);
     ros::param::param("ec_max_cluster_size", max_cluster_size, 20000);
-    // ROS_INFO("Tolerance: %f", cluster_tolerance);
-    // ROS_INFO("Min cluster: %d", min_cluster_size);
-    // ROS_INFO("Max cluster: %d", max_cluster_size);
-    // ROS_INFO("Cloud size %ld", cloud->size());
-    // pcl::PointIndices inside_bin_indices;
-    // Cloud2Indices(cloud, &inside_bin_indices);
-    // ROS_INFO("Got params");
-    pcl::EuclideanClusterExtraction<PointC> euclid;
-    euclid.setInputCloud(cloud);
-    // euclid.setIndices(&inside_bin_indices); // << TODO: is cloud already cropped or do we get indices for the crop?
-    euclid.setClusterTolerance(cluster_tolerance);
-    euclid.setMinClusterSize(min_cluster_size);
-    euclid.setMaxClusterSize(max_cluster_size);
-    euclid.extract(*indices);
-
-    // pcl::search::Search<PointC>::Ptr tree(new pcl::search::KdTree<PointC>);
-    // pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
-    // pcl::NormalEstimation<PointC, pcl::Normal> normal_estimator;
-    // normal_estimator.setSearchMethod(tree);
-    // normal_estimator.setInputCloud(cloud);
-    // normal_estimator.setKSearch(50);
-    // normal_estimator.compute(*normals);
-    // pcl::RegionGrowing<PointC, pcl::Normal> clustering;
-    // clustering.setSearchMethod(tree);
-    // clustering.setNumberOfNeighbours(30);
-    // clustering.setInputCloud(cloud);
-    // // clustering.setIndices (indices);
-    // clustering.setInputNormals(normals);
-    // clustering.setSmoothnessThreshold(2.5 / 180.0 * M_PI);
-    // clustering.setCurvatureThreshold(1.0);
-
-    // pcl::RegionGrowingRGB<PointC> clustering;
-    // clustering.setInputCloud(cloud);
-    // clustering.setSearchMethod(tree);
-    // clustering.setDistanceThreshold(0.02);
-    // clustering.setPointColorThreshold(6);
-    // clustering.setRegionColorThreshold(5);
-
-    // ROS_INFO("Finished extracting");
-
+    std::string algorithm;
+    if (algo == 0) {  // Region growing segmentation algorithm
+        algorithm = "region-growing";
+        double smoothness, curvature;
+        ros::param::param("ec_smoothness", smoothness, 10.0);
+        ros::param::param("ec_curvature", curvature, 1.0);
+        pcl::search::Search<PointC>::Ptr tree(new pcl::search::KdTree<PointC>);
+        pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+        pcl::NormalEstimation<PointC, pcl::Normal> normal_estimator;
+        normal_estimator.setSearchMethod(tree);
+        normal_estimator.setInputCloud(cloud);
+        normal_estimator.setKSearch(50);
+        normal_estimator.compute(*normals);
+        pcl::RegionGrowing<PointC, pcl::Normal> clustering;
+        clustering.setSearchMethod(tree);
+        clustering.setNumberOfNeighbours(30);
+        clustering.setInputCloud(cloud);
+        // clustering.setIndices (indices);
+        clustering.setInputNormals(normals);
+        clustering.setMinClusterSize(min_cluster_size);
+        clustering.setMaxClusterSize(max_cluster_size);
+        clustering.setSmoothnessThreshold(smoothness / 180.0 * M_PI);
+        clustering.setCurvatureThreshold(curvature);
+        clustering.extract(*indices);
+    } else if (algo == 1) {  // Color-based region-growing segmentation algorithm
+        algorithm = "color-based";
+        pcl::RegionGrowingRGB<PointC> clustering;
+        pcl::search::Search<PointC>::Ptr tree(new pcl::search::KdTree<PointC>);
+        clustering.setInputCloud(cloud);
+        clustering.setSearchMethod(tree);
+        clustering.setDistanceThreshold(0.02);
+        clustering.setPointColorThreshold(6);
+        clustering.setRegionColorThreshold(5);
+        clustering.setMinClusterSize(min_cluster_size);
+        clustering.setMaxClusterSize(max_cluster_size);
+        clustering.extract(*indices);
+    } else {  // Euclidean Algorithm
+        algorithm = "euclidean";
+        pcl::EuclideanClusterExtraction<PointC> euclid;
+        euclid.setInputCloud(cloud);
+        // euclid.setIndices(&inside_bin_indices); // << TODO: is cloud already cropped or do we get indices for the crop?
+        euclid.setClusterTolerance(cluster_tolerance);
+        euclid.setMinClusterSize(min_cluster_size);
+        euclid.setMaxClusterSize(max_cluster_size);
+        euclid.extract(*indices);
+    }
     // Find the size of the smallest and the largest object,
     // where size = number of points in the cluster
     size_t min_size = std::numeric_limits<size_t>::max();
@@ -106,16 +95,8 @@ void SegmentBinObjects(PointCloudC::Ptr cloud, std::vector<pcl::PointIndices>* i
         max_size = std::max(max_size, cluster_size);
         min_size = std::min(min_size, cluster_size);
     }
-
-    ROS_INFO("Found %ld objects, min size: %ld, max size: %ld",
-            indices->size(), min_size, max_size);
-}
-
-void Cloud2Indices(const PointCloudC::Ptr cloud, pcl::PointIndices* indices) {
-    for (size_t i=0; i<indices->indices.size(); ++i) {
-        int index = indices->indices[i];
-        const PointC& pt = cloud->points[index];
-    }
+    ROS_INFO("%s algorithm found %ld objects, min size: %ld, max size: %ld",
+            algorithm.c_str(), indices->size(), min_size, max_size);
 }
 
 void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
@@ -141,38 +122,35 @@ void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
     // ROS_INFO("dimensions->z %lf", dimensions->z);
 }
 
-Segmenter::Segmenter(const ros::Publisher& points_pub,
-                    const ros::Publisher& marker_pub,
-                    const ObjectRecognizer& recognizer)
-    : points_pub_(points_pub),
-        marker_pub_(marker_pub),
-        recognizer_(recognizer) {}
-
-void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
-    // ROS_INFO("In Segementer Callback");
-    PointCloudC::Ptr cloud_unfiltered(new PointCloudC());
-    pcl::fromROSMsg(msg, *cloud_unfiltered);
-    PointCloudC::Ptr cloud(new PointCloudC());
-    std::vector<int> index;
-    pcl::removeNaNFromPointCloud(*cloud_unfiltered, *cloud, index);
-
-
+void VisualizeClusters(PointCloudC::Ptr cloud, const ros::Publisher& marker_pub, int algo) {
     std::vector<Object> objects;
-    SegmentObjects(cloud, &objects);
-    ROS_INFO("Back in callback");
-    
+    SegmentObjects(cloud, &objects, algo);    
     for (size_t i = 0; i < objects.size(); ++i) {
-        ROS_INFO("making mark %ld", i);
-        // // Reify indices into a point cloud of the object.
-        // pcl::PointIndices::Ptr indices(new pcl::PointIndices);
-        // *indices = object_indices[i];
-        // PointCloudC::Ptr object_cloud(new PointCloudC());
-        // // TODO: fill in object_cloud using indices
-        // pcl::ExtractIndices<PointC> extract;
-        // extract.setInputCloud(cloud);
-        // extract.setIndices(indices);
-        // extract.filter(*object_cloud);
+        const Object& object = objects[i];
 
+        // Publish a bounding box around it.
+        visualization_msgs::Marker object_marker;
+        object_marker.ns = "objects";
+        object_marker.id = i;
+        object_marker.header.frame_id = "ar_marker_15";
+        object_marker.type = visualization_msgs::Marker::CUBE;
+        object_marker.pose = object.pose;
+        object_marker.scale = object.dimensions;
+        object_marker.color.g = 1;
+        object_marker.color.a = 0.5;
+        // ros::Publisher marker_pub_;
+        marker_pub.publish(object_marker);
+    }
+}
+
+
+void VisualizeObjects(ObjectRecognizer recognizer, PointCloudC::Ptr cloud, const ros::Publisher& marker_pub, const ros::Publisher& object_pub, int algo) {
+    std::vector<Object> objects;
+    SegmentObjects(cloud, &objects, algo);
+    ROS_INFO("Back in callback");
+    std::vector<std::string> names;
+    std::vector<geometry_msgs::PoseStamped> poses;
+    for (size_t i = 0; i < objects.size(); ++i) {
         const Object& object = objects[i];
 
         // Publish a bounding box around it.
@@ -186,17 +164,17 @@ void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
         object_marker.color.g = 1;
         object_marker.color.a = 0.3;
         // ros::Publisher marker_pub_;
-        marker_pub_.publish(object_marker);
+        marker_pub.publish(object_marker);
 
         // Recognize the object.
         std::string name;
         double confidence;
         // TODO: recognize the object with the recognizer_. /////////////////////////////
-        recognizer_.Recognize(object, &name, &confidence);
+        recognizer.Recognize(object, &name, &confidence);
         confidence = round(1000 * confidence) / 1000;
 
         std::stringstream ss;
-        ss << name << " (" << confidence << ")";
+        ss << name << " " << object.cloud->size() << " (" << confidence << ")";
 
         // Publish the recognition result.
         visualization_msgs::Marker name_marker;
@@ -215,7 +193,75 @@ void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
         name_marker.color.b = 1.0;
         name_marker.color.a = 1.0;
         name_marker.text = ss.str();
-        marker_pub_.publish(name_marker);
+        marker_pub.publish(name_marker);
+
+        geometry_msgs::PoseStamped pose;
+        pose.header.frame_id = "ar_marker_15";
+        pose.pose.position = object.pose.position;
+        pose.pose.orientation.w = 1;
+
+        names.push_back(name);
+        poses.push_back(pose);
     }
+
+    // std::string* nameArr = &names[0];
+    // geometry_msgs::PoseStamped* poseArr = &poses[0];
+    perception_msgs::ObjectPose objectPose;
+    objectPose.names = names;
+    objectPose.poses = poses;
+    object_pub.publish(objectPose);
+}
+
+namespace perception {
+
+Segmenter::Segmenter(const ros::Publisher& marker_pub, const ros::Publisher& object_pub,
+                    const ObjectRecognizer& recognizer)
+    : marker_pub_(marker_pub), object_pub_(object_pub),
+        recognizer_(recognizer)  {}
+
+void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
+    // ROS_INFO("In Segementer Callback");
+    PointCloudC::Ptr cloud_unfiltered(new PointCloudC());
+    pcl::fromROSMsg(msg, *cloud_unfiltered);
+    PointCloudC::Ptr cloud(new PointCloudC());
+    std::vector<int> index;
+    pcl::removeNaNFromPointCloud(*cloud_unfiltered, *cloud, index);
+
+    VisualizeObjects(recognizer_, cloud, marker_pub_, object_pub_, 2);
+    // VisualizeObjects(recognizer_, cloud, reg_marker_pub_, 0);
+    // VisualizeObjects(recognizer_, cloud, col_marker_pub_, 1);
+    // VisualizeClusters(cloud, euc_marker_pub_, 2);
+    // VisualizeClusters(cloud, reg_marker_pub_, 0);
+    // VisualizeClusters(cloud, col_marker_pub_, 1);
+    
+}
+
+void SegmentObjects(PointCloudC::Ptr cloud,
+                          std::vector<Object>* objects, int algo) {
+    // Same as callback, but with visualization code removed.
+    std::vector<pcl::PointIndices> object_indices;
+    SegmentBinObjects(cloud, &object_indices, algo);
+
+    for (int i = 0; i < object_indices.size(); i++) {
+        struct Object object;
+        pcl::ExtractIndices<PointC> extract;
+        pcl::PointIndices::Ptr indices(new pcl::PointIndices);
+        *indices = object_indices[i];
+        extract.setInputCloud(cloud);
+        extract.setIndices(indices);
+        PointCloudC::Ptr object_cloud(new PointCloudC());
+        extract.filter(*object_cloud);
+        object.cloud = object_cloud;
+        GetAxisAlignedBoundingBox(object.cloud, &(object.pose), &(object.dimensions));
+        objects->push_back(object);
+    }
+    // struct Object object;
+    // GetAxisAlignedBoundingBox(cloud, &(object.pose), &(object.dimensions));
+    // objects->push_back(object);
+    ROS_INFO("Finished with segmentobjects");
+}
+
+void SegmentObjects(PointCloudC::Ptr cloud, std::vector<Object>* objects) {
+    SegmentObjects(cloud, objects, 2);
 }
 }  // namespace perception

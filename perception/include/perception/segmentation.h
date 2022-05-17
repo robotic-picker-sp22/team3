@@ -13,12 +13,12 @@
 namespace perception {
 
 // Add function definitions here later
-void Cloud2Indices(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, pcl::PointIndices *indices);
-void SegmentBinObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                           std::vector<pcl::PointIndices>* indices);
-void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                               geometry_msgs::Pose* pose,
-                               geometry_msgs::Vector3* dimensions);
+// void Cloud2Indices(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, pcl::PointIndices *indices);
+// void SegmentBinObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+//                            std::vector<pcl::PointIndices>* indices);
+// void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+//                                geometry_msgs::Pose* pose,
+//                                geometry_msgs::Vector3* dimensions);
 
 // Does a complete bin segmentation pipeline.
 //
@@ -27,13 +27,15 @@ void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
 //  objects: The output objects.
 void SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                           std::vector<Object>* objects);
+void SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                          std::vector<Object>* objects, int algo);
 
 class Segmenter {
  public:
   Segmenter(const ros::Publisher& marker_pub);
 
-  Segmenter(const ros::Publisher& points_pub,
-            const ros::Publisher& marker_pub,
+  Segmenter(const ros::Publisher& marker_pub,
+            const ros::Publisher& object_pub,
             const ObjectRecognizer& recognizer);
 
   void Callback(const sensor_msgs::PointCloud2& msg);
@@ -41,7 +43,7 @@ class Segmenter {
 
  private:
   ros::Publisher marker_pub_;
-  ros::Publisher points_pub_;
+  ros::Publisher object_pub_;
   ObjectRecognizer recognizer_;
 };
 }  // namespace perception
