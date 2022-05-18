@@ -159,6 +159,7 @@ class GripperTeleop(object):
                 pose_stamped = PoseStamped()
                 pose_stamped.header.frame_id = 'base_link'
                 pose_stamped.pose = self._im_server.get('gripper').pose
+                rospy.loginfo(f"Moving to pose: {pose_stamped}")
                 # kwargs = {
                 #     'allowed_planning_time': 15,
                 #     'execution_timeout': 40,
@@ -182,7 +183,7 @@ class GripperTeleop(object):
             pose_stamped = PoseStamped()
             pose_stamped.header.frame_id = 'base_link'
             pose_stamped.pose = im.pose
-            print(pose_stamped)
+            # print(pose_stamped)
             ok = self._arm.compute_ik(pose_stamped, print=False)
             # if ok:
             #     rospy.loginfo("ik ok")
