@@ -50,11 +50,18 @@ class BinMarker(object):
     def get_left_top_front_point(col, row):
         if col == 0:
             return [0, ROW_HEIGHT_0 * row, 0]
-        else:
+        elif 1 <= col and col <= 3:
             x = (col - 1) * COL_WIDTH + COL_WIDTH_0
             y = row * ROW_HEIGHT
             z = 0
             return [x, y, z]
+        elif col == 4:
+            x = 0
+            y = row * ROW_HEIGHT
+            z = 0
+            return [x, y, z]
+        else:
+            return [-COL_WIDTH_0,-ROW_HEIGHT_0,0]
 
     @staticmethod
     def transform_points(points):
@@ -96,6 +103,13 @@ class BinMarker(object):
         marker.color.r, marker.color.g, marker.color.b = rgb
         marker.color.a = 0.3
         self.marker_publisher.publish(marker)
+        if col == 0:
+            frame = "ar_marker_15"
+        elif 1 <= col and col <= 3:
+            frame = "ar_marker_15"
+        elif col == 4:
+            frame = "ar_marker_15"
+        rospy.set_param("crop_frame_id", frame)
         rospy.set_param("crop_min_x", float(min_x))    
         rospy.set_param("crop_min_y", float(min_y))
         rospy.set_param("crop_min_z", float(min_z))

@@ -23,15 +23,13 @@ namespace perception {
 
     void transform_cloud(const sensor_msgs::PointCloud2& cloud_in, sensor_msgs::PointCloud2& cloud_out) {
         tf::TransformListener tf_listener;                                                 
-        // tf_listener.waitForTransform("base_link", cloud_in.header.frame_id,                     
-        //                             ros::Time(0), ros::Duration(5.0));
-        tf_listener.waitForTransform("ar_marker_15", cloud_in.header.frame_id,                     
+        std::string frame_id;
+        ros::param::param<std::string>("crop_frame_id", frame_id, "ar_marker_15");
+        tf_listener.waitForTransform(frame_id, cloud_in.header.frame_id,                     
                                     ros::Time(0), ros::Duration(5.0));                       
         tf::StampedTransform transform;                                                       
-        try {                                                                                 
-            // tf_listener.lookupTransform("base_link", cloud_in.header.frame_id,                    
-            //                             ros::Time(0), transform);                       
-            tf_listener.lookupTransform("ar_marker_15", cloud_in.header.frame_id,                    
+        try {                                                                                                      
+            tf_listener.lookupTransform(frame_id, cloud_in.header.frame_id,                    
                                         ros::Time(0), transform);                           
         } catch (tf::LookupException& e) {                                                    
             std::cerr << e.what() << std::endl;                                                 
@@ -40,7 +38,7 @@ namespace perception {
             std::cerr << e.what() << std::endl;                                                 
             return;                                                         
         }                                                                                                                                                                     
-        pcl_ros::transformPointCloud("ar_marker_15", transform, cloud_in, cloud_out);
+        pcl_ros::transformPointCloud(frame_id, transform, cloud_in, cloud_out);
     }
 
     void Cropper::Callback(const sensor_msgs::PointCloud2& msg) {
