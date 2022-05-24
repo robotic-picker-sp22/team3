@@ -63,6 +63,7 @@ add_service_files(
   SetArm.srv
   SetHead.srv
   Nav.srv
+  SetObjectList.srv
 )
 
 ## Generate actions in the 'action' folder

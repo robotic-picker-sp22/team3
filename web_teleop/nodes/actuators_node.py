@@ -37,6 +37,12 @@ class ActuatorServer(object):
             self._gripper.open()
         return SetGripperResponse()
     
+    def handle_object_list(self, request):
+        rospy.loginfo(request)
+        res = SetObjectListResponse()
+        res.success = True
+        return res
+
     def handle_set_arm(self, request):
         # TODO: Set each arm joint
         # joint_list = [request[name[:-6]] for name in robot_api.ArmJoints.names()]
@@ -83,8 +89,9 @@ def main():
     head_service = rospy.Service("web_teleop/set_head", SetHead, server.handle_set_head)
     arm_service = rospy.Service("web_teleop/set_arm", SetArm, server.handle_set_arm)
     nav_goal = rospy.Service("web_teleop/nav_goal", Nav, server.handle_nav)
+    object_list_service = rospy.Service("/web_teleop/set_object_list", SetObjectList, server.handle_object_list)
+    rospy.loginfo("Created Services")
     rospy.spin()
-
 
 if __name__ == '__main__':
     main()
