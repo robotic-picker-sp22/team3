@@ -1,0 +1,5 @@
+<launch>
+  <node name="web_teleop_website" pkg="web_teleop" type="start_frontend.sh">
+    <env name="FRONTEND_PATH" value="$(find web_teleop)/frontend" />
+  </node>
+</launch>

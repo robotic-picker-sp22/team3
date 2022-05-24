@@ -6,18 +6,5 @@
   <node pkg="web_video_server" type="web_video_server" name="web_video_server">
     <param name="port" value="8000" />
   </node>
-  
-  <!-- From map_annotator -->
-  <!-- <node pkg="map_annotator" type="backend_server.py" name="map_annotator_server" args="$(env HOME)/our_pose_db_name.db"/> -->
-
-  <!-- Web prereqs -->
-  <!-- <node pkg="tf2_web_republisher" type="tf2_web_republisher" name="tf2_web_republisher" />
-  <node pkg="interactive_marker_proxy" type="proxy" name="interactive_marker_proxy_basic_controls">
-    <remap from="target_frame" to="/map" />
-    <remap from="topic_ns" to="/map_annotator/map_poses" />
-    <param name="update_rate" value="10.0" />
-  </node>
-  <node pkg="collada_web_server" type="run_caddy.bash" name="collada_caddy" cwd="node" /> -->
-  <!-- End of stuff from map_annotator -->
-
+  <include file="$(find web_teleop)/launch/nextjs.launch" />
 </launch>
