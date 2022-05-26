@@ -1,6 +1,7 @@
 import { useState } from "react"
 import ROSLIB from "roslib"
-
+import { Autocomplete } from '@mantine/core';
+import { objectList } from '../../utils/constants'
 
 type ObjectListProps = {
     ros: ROSLIB.Ros
@@ -27,6 +28,12 @@ export default function ObjectList({ ros }: ObjectListProps) {
             }}
                 value={inputText}
             />
+            <Autocomplete
+                onChange={setInputText}
+                value={inputText}
+                data={objectList}
+                error={!objectList.includes(inputText)}
+            />
             <button onClick={() => {
                 setObjects(old => {
                     return [...old, inputText]
@@ -37,7 +44,7 @@ export default function ObjectList({ ros }: ObjectListProps) {
 
                 const request = new ROSLIB.ServiceRequest({ objects })
                 service.callService(request, (e) => {
-                    console.log("Recieved Response", e);
+                    console.log("Received Response", e);
                 },
                 (e) => {
                     console.log("Failed", e);
