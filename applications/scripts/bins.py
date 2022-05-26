@@ -12,9 +12,11 @@ DEPTH = 0.28
 X = 0
 Y = 1
 Z = 2
-OFFSET_X = 0.032
+OFFSET_X = 0.032 + 0.02
 OFFSET_Y = 0.032
 TAG_POSE_TOPIC = '/ar_pose_marker'
+HORI_PADDING = 0.03
+VERT_PADDING = 0.025
 class BinMarker(object):
 
 
@@ -77,31 +79,35 @@ class BinMarker(object):
         points = np.array(points)
         mins = points.min(axis=0)
         maxes = points.max(axis=0)
-        return np.append(mins, maxes)
+        return [float(x) for x in np.append(mins, maxes)]
         
     def display_bin(self, col, row, rgb=(0,0,1)):
         result = BinMarker.get_min_max(col, row)
         min_x, min_y, min_z, max_x, max_y, max_z = result
+        min_x += VERT_PADDING
+        min_y += HORI_PADDING
+        max_x -= VERT_PADDING
+        max_y -= HORI_PADDING
         marker = Marker(type=Marker.CUBE)
-        marker.header.frame_id = "ar_marker_15"
+        marker.header.frame_id = "shelf_frame"
         marker.pose = Pose()
         marker.pose.position.x = (max_x + min_x) / 2
         marker.pose.position.y = (max_y + min_y) / 2
         marker.pose.position.z = (max_z + min_z) / 2
         marker.pose.orientation.w = 1
         marker.scale = Vector3()
-        marker.scale.x = .14
-        marker.scale.y = .24
-        marker.scale.z = .24
+        marker.scale.x = max_x - min_x
+        marker.scale.y = max_y - min_y
+        marker.scale.z = max_z - min_z
         marker.color.r, marker.color.g, marker.color.b = rgb
         marker.color.a = 0.3
         self.marker_publisher.publish(marker)
-        rospy.set_param("crop_min_x", float(min_x))    
-        rospy.set_param("crop_min_y", float(min_y))
-        rospy.set_param("crop_min_z", float(min_z))
-        rospy.set_param("crop_max_x", float(max_x))
-        rospy.set_param("crop_max_y", float(max_y))
-        rospy.set_param("crop_max_z", float(max_z))
+        rospy.set_param("crop_min_x", min_x)    
+        rospy.set_param("crop_min_y", min_y)
+        rospy.set_param("crop_min_z", min_z)
+        rospy.set_param("crop_max_x", max_x)
+        rospy.set_param("crop_max_y", max_y)
+        rospy.set_param("crop_max_z", max_z)
 
 
 
