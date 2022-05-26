@@ -1,0 +1,12 @@
+# picks the item at the given location and places it in the bin
+
+# goal
+string                    name
+geometry_msgs/PoseStamped pose
+geometry_msgs/Vector3     dimensions
+---
+# result
+string   status
+---
+# feedback
+string   state

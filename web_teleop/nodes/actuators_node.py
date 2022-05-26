@@ -5,6 +5,7 @@ import map_annotator
 import rospy
 # from web_teleop.srv import SetTorso, SetTorsoResponse, SetGripper, SetGripperResponse, SetArm, SetArmResponse, SetHead, SetHeadResponse
 from web_teleop.srv import *
+from picking_msgs.srv import PickupObjectList
 
 def wait_for_time():
     """Wait for simulated time to begin.
@@ -20,6 +21,10 @@ class ActuatorServer(object):
         self._head = robot_api.Head()
         self._arm = robot_api.Arm()
         self._nav_goal = map_annotator.NavGoal()
+        rospy.logerr("waiting for main_picker_node")
+        rospy.wait_for_service('main_picker_object_list')
+        rospy.logerr("finished waiting for main_picker_node")
+        self.begin_pickup = rospy.ServiceProxy('main_picker_object_list', PickupObjectList)
 
     def handle_set_torso(self, request):
         # TODO: move the torso to the requested height
@@ -38,7 +43,10 @@ class ActuatorServer(object):
         return SetGripperResponse()
     
     def handle_object_list(self, request):
-        rospy.loginfo(request)
+        rospy.logerr(request)
+        # logic
+        rospy.wait_for_service("main_picker_object_list")
+        self.begin_pickup(request.objects)
         res = SetObjectListResponse()
         res.success = True
         return res
@@ -82,7 +90,9 @@ class ActuatorServer(object):
 def main():
     rospy.init_node('web_teleop_actuators')
     wait_for_time()
+    rospy.logerr("Creating Server")
     server = ActuatorServer()
+    rospy.logerr("Created Server")
     torso_service = rospy.Service('web_teleop/set_torso', SetTorso,
                                   server.handle_set_torso)
     gripper_service = rospy.Service('web_teleop/set_gripper', SetGripper, server.handle_set_gripper)
@@ -90,7 +100,7 @@ def main():
     arm_service = rospy.Service("web_teleop/set_arm", SetArm, server.handle_set_arm)
     nav_goal = rospy.Service("web_teleop/nav_goal", Nav, server.handle_nav)
     object_list_service = rospy.Service("/web_teleop/set_object_list", SetObjectList, server.handle_object_list)
-    rospy.loginfo("Created Services")
+    rospy.logerr("Created Services")
     rospy.spin()
 
 if __name__ == '__main__':

@@ -3,19 +3,47 @@
 from time import sleep
 import robot_api
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Quaternion
 from perception_msgs.msg import ObjectPose
 from ar_track_alvar_msgs.msg import AlvarMarkers
+
+''' Run before starting
+The AR marker stuff:
+    roslaunch robot_api ar_desktop.launch cam_image_topic:=mock_point_cloud
+Bin cropper:
+    rosrun applications bin_marker_cropper.py
+(SIM ONLY) cloud publisher:
+    rosrun applications publish_saved_cloud.py scene2.bag
+Point cloud demo:
+    roslaunch perception point_cloud_demo.launch data_dir:=/home/capstone/catkin_ws/src/fetch-picker/combined_labels
+(Run on robot IRL) MoveIt:
+    roslaunch robot_api move_group.launch
+Then run this code
+'''
+
+def print_usage():
+    print('Picks up an object')
+    print('Usage: rosrun applications pickup.py object_name')
+
 
 TAG_POSE_TOPIC = '/ar_pose_marker'
 OBJECT_POSE_TOPIC = "/object_pose"
 PRE_PICKUP_DIST = 0.2
+GRIPPER_LENGTH = 0.166
+GRIPPER_MARGIN = 0.04
+
+AR_FLAT = Quaternion()
+AR_FLAT.x = 0.0
+AR_FLAT.y = .707
+AR_FLAT.z = 0
+AR_FLAT.w = .707
+
 
 START_POSE = PoseStamped()
-START_POSE.header.frame_id = "base_link"
-START_POSE.pose.position.x = 0.4323596954345703
-START_POSE.pose.position.y = 0.09097349643707275
-START_POSE.pose.position.z = 0.9650132656097412
+START_POSE.header.frame_id = "torso_lift_link"
+START_POSE.pose.position.x = 0.45
+START_POSE.pose.position.y = 0.3
+START_POSE.pose.position.z = 0.2805710911750793
 START_POSE.pose.orientation.x = 0
 START_POSE.pose.orientation.y = 0
 START_POSE.pose.orientation.z = 0
@@ -62,52 +90,99 @@ def wait_for_time():
 class Pickup():
 
     objects = []
+    in_movement = False
 
-    def __init__(self, silent=False) -> None:
+    def __init__(self, listen=True, silent=False) -> None:
         self.silent = silent
         self.arm = robot_api.Arm()
         self.gripper = robot_api.Gripper()
-        rospy.Subscriber(TAG_POSE_TOPIC, AlvarMarkers, self._tag_pose_callback)
-        rospy.Subscriber(OBJECT_POSE_TOPIC, ObjectPose, self._get_pose)
+        if listen:
+            rospy.Subscriber(TAG_POSE_TOPIC, AlvarMarkers, self._tag_pose_callback)
+            rospy.Subscriber(OBJECT_POSE_TOPIC, ObjectPose, self._get_pose)
 
     def _tag_pose_callback(self, msg):
         pass
 
     def _get_pose(self, msg):
+        old_objects = list(self.objects)
         self.objects.clear()
-        for name, pose in zip(msg.names, msg.poses):
-            self.objects.append({
-                "name": name,
-                "pose": pose
-            })
-        if not self.silent:
-            rospy.loginfo(f"Sees {len(self.objects)} objects")
+        if self.in_movement:
+            return
+        for name, pose, dimensions in zip(msg.names, msg.poses, msg.dimensions):
+            new_obj = {"name": name, "pose": pose, "dimensions": dimensions}
+            if new_obj in old_objects:
+                old_objects.remove(new_obj)
+            else:
+                rospy.loginfo(f'Found new object {name}')
+            self.objects.append(new_obj)
+        for obj in old_objects:
+            print('Lost view of %s' % new_obj['name'])
+        # if not self.silent:
+        #     rospy.loginfo(f"Sees {len(self.objects)} objects")
+
+    def get_object(self, obj_name: str) -> dict:
+        # Returns the object descriptor dictionary, or None
+        # if couldn't find the object
+        obj_name = obj_name.lower()
+        for object in self.objects:
+            if object['name'].lower() == obj_name:
+                return object
+        return None
+
     
     def pickup(self, name):
-        for object in self.objects:
-            if object['name'] == name:
-                if not self.silent:
-                    rospy.loginfo(f"Picking up {name} at {object['pose']}")
-                pose = object['pose']
-                self.gripper.open()
-                pose.pose.position.z += 0.166 + PRE_PICKUP_DIST
-                pose.pose.orientation.x = 0.0
-                pose.pose.orientation.y = .707
-                pose.pose.orientation.z = 0
-                pose.pose.orientation.w = .707
-                if not self.silent:
-                    rospy.loginfo(f"{pose}")
-                self.arm.move_to_pose_ik(pose)
-                pose.pose.position.z -= PRE_PICKUP_DIST
-                self.arm.move_to_pose_ik(pose)
-                self.gripper.close(max_effort=60)
-                pose.pose.position.z += PRE_PICKUP_DIST
-                self.arm.move_to_pose_ik(pose)
-                self.drop()
-                return True
+        object = self.get_object(name)
+        self.in_movement = True
+        if object is None:
+            if not self.silent:
+                rospy.logerr(f"Couldn't find object {name}")
+            return False
         if not self.silent:
-            rospy.loginfo(f"Couldn't find object {name}")
-        return False
+            rospy.loginfo(f"Picking up {name}")
+        self.prepick(object)
+        self.pick(object)
+        self.place(object)
+        self.in_movement = False
+        return True
+
+
+    def prepick(self, obj):
+        self.in_movement = True
+        self.start_pose()
+        self.clear_area(obj)
+        self.in_movement = False
+
+
+    def pick(self, obj):
+        self.in_movement = True
+        pose = obj['pose']
+        self.pickup_object(pose)
+        self.in_movement = False
+
+
+    def place(self, obj):
+        self.in_movement = True
+        self.drop()
+        self.start_pose()
+        self.in_movement = False
+
+
+    def pickup_object(self, pose):
+        self.gripper.open()
+        pose.pose.position.x += GRIPPER_MARGIN
+        pose.pose.position.z += GRIPPER_LENGTH + PRE_PICKUP_DIST
+        pose.pose.orientation = AR_FLAT
+        if not self.silent:
+            rospy.loginfo(f"{pose}")
+        self.arm.move_to_pose_ik(pose)
+        pose.pose.position.x -= GRIPPER_MARGIN
+        pose.pose.position.z -= PRE_PICKUP_DIST + 0.02
+        self.arm.move_to_pose_ik(pose)
+        self.gripper.close(max_effort=60)
+        pose.pose.position.x += GRIPPER_MARGIN
+        pose.pose.position.z += PRE_PICKUP_DIST + 0.02
+        self.arm.move_to_pose_ik(pose)
+
 
     def drop(self):
         if not self.silent:
@@ -125,17 +200,117 @@ class Pickup():
         self.gripper.open()
         if not self.silent:
             rospy.loginfo("Finished Drop")
+    
+    def start_pose(self):
+        if not self.silent:
+            rospy.loginfo("Going to start pose")
+        for i in range(5):
+            if self.arm.move_to_pose_ik(START_POSE):
+                return
+            sleep(1)
+        rospy.logerr('Could not move to start')
+        exit(-1)
+
+    def clear_area(self, object: dict):
+        ''' Clears all objects away from the path into the bin for 
+        the selected object
+        '''
+        BIN_CENTER = -0.12
+        goal_obj_left = object['pose'].pose.position.y > BIN_CENTER
+        objs_front = self.any_infront(object)
+        if len(objs_front) < 1:
+            return
+        self.gripper.close()
+        for of in objs_front:
+            self.push_object(of, goal_obj_left)
+
+    def push_object(self, object: dict, to_right: bool):
+        ''' Pushes object to either side of the bin. Pushes
+        right if to_right set, pushes left otherwise.
+        '''
+        rospy.loginfo('Pushing %s out of the way' % object['name'])
+        pose = object['pose']
+        dimensions = object['dimensions']
+        pose.pose.orientation = AR_FLAT
+        # Pre-push position
+        offset = dimensions.y/2 + GRIPPER_MARGIN
+        if not to_right: offset *= -1
+        pose.pose.position.y += offset
+        pose.pose.position.z += GRIPPER_LENGTH + PRE_PICKUP_DIST
+        self.arm.move_to_pose_ik(pose)
+        # Just abt to push position
+        pose.pose.position.z -= PRE_PICKUP_DIST
+        self.arm.move_to_pose_ik(pose)
+        # Push position
+        pose.pose.position.y = -0.10 #TODO: change this to be variable
+        self.arm.move_to_pose_ik(pose)
+        # Back off
+        offset = GRIPPER_MARGIN
+        if not to_right: offset *= -1
+        pose.pose.position.y += offset
+        self.arm.move_to_pose_ik(pose)
+        # Pull out
+        pose.pose.position.z += PRE_PICKUP_DIST
+        self.arm.move_to_pose_ik(pose)
+
+
+
+    def any_infront(self, object: dict) -> list:
+        ''' Checks if any other objects are infront of the provided 
+        object, and returns a list of objects infront
+        '''
+        objects_infront = []
+        for other_obj in self.objects:
+            if other_obj == object: continue
+            if self.infront(object, other_obj):
+                rospy.loginfo('%s infront of %s' % (other_obj['name'], object['name']))
+                objects_infront.append(other_obj)
+        if len(objects_infront) == 0:
+            rospy.loginfo('No objects infront of %s' % object['name'])
+        return objects_infront
+
+
+    def infront(self, obj_b: dict, obj_i: dict):
+        ''' Returns true if object_behind is behind object_infront,
+        false otherwise
+        '''
+        # Check z axis greater
+        if obj_b['pose'].pose.position.z >= obj_i['pose'].pose.position.z:
+            rospy.loginfo('%s toward front of bin of %s' % (obj_b['name'], obj_i['name']))
+            return False
+        # Else behind is further into bin, check overlap
+        b_min = obj_b['pose'].pose.position.y - obj_b['dimensions'].y/2
+        b_max = obj_b['pose'].pose.position.y + obj_b['dimensions'].y/2
+        i_min = obj_i['pose'].pose.position.y - obj_i['dimensions'].y/2
+        i_max = obj_i['pose'].pose.position.y + obj_i['dimensions'].y/2
+        rospy.loginfo('obj_b %s' % obj_b['name'])
+        rospy.loginfo(f'b_min {b_min}')
+        rospy.loginfo(f'b_max {b_max}')
+        rospy.loginfo('obj_i %s' % obj_i['name'])
+        rospy.loginfo(f'i_min {i_min}')
+        rospy.loginfo(f'i_max {i_max}')
+        min_in_range = b_min < i_min and i_min < b_max
+        max_in_range = b_min < i_max and i_max < b_max
+        bigger = i_min < b_min and b_max < i_max
+        rospy.loginfo(f'min_in_range {min_in_range}')
+        rospy.loginfo(f'max_in_range {max_in_range}')
+        rospy.loginfo(f'bigger {bigger}')
+        return min_in_range or max_in_range or bigger
 
 
 def main():
     rospy.init_node('pickup_demo')
     wait_for_time()
+    argv = rospy.myargv()
+    if len(argv) < 2:
+        print_usage()
+        return
     pickup = Pickup()
     sleep(1)
     rospy.loginfo(f"Finished initializing pickup")
-    pickup.pickup("pill_box")
-    pickup.drop()
-    rospy.spin()
+    pickup.pickup(argv[1])
+    # pickup.start_pose()
+    # rospy.spin()
 
 if __name__ == '__main__':
     main()

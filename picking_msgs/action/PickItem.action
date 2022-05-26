@@ -1,0 +1,10 @@
+# picks the item from the pose given and returns to home pose
+
+# goal
+perception_msgs.ObjectPose
+---
+# result
+uint8 error_code
+---
+# feedback
+string state

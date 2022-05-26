@@ -1,0 +1,10 @@
+# prepares to pick given item
+
+# goal
+perception_msgs.objectpose
+---
+# result
+uint8 error_code
+---
+# feedback
+string state

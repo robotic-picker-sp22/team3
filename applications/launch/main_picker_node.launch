@@ -1,0 +1,5 @@
+<launch>
+    <arg name="db_file" value="$(find applications)/../object_db_files/test.csv"/>
+    <node pkg="applications" type="pickup_server.py" name="pickup_server_node"/>
+    <node pkg="applications" type="main_picker_node.py" name="main_picker_node" args="$(arg db_file)"/>
+</launch>
