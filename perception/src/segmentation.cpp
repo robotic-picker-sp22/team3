@@ -1,3 +1,4 @@
+#include "perception/perception.h"
 #include "perception/segmentation.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "visualization_msgs/Marker.h"
@@ -37,7 +38,7 @@ void SegmentBinObjects(PointCloudC::Ptr cloud, std::vector<pcl::PointIndices>* i
         double cluster_tolerance;
     int min_cluster_size, max_cluster_size;
     ros::param::param("ec_cluster_tolerance", cluster_tolerance, 0.02);
-    ros::param::param("ec_min_cluster_size", min_cluster_size, 100);
+    ros::param::param("ec_min_cluster_size", min_cluster_size, 300);
     ros::param::param("ec_max_cluster_size", max_cluster_size, 20000);
     std::string algorithm;
     if (algo == 0) {  // Region growing segmentation algorithm
@@ -132,7 +133,7 @@ void VisualizeClusters(PointCloudC::Ptr cloud, const ros::Publisher& marker_pub,
         visualization_msgs::Marker object_marker;
         object_marker.ns = "objects";
         object_marker.id = i;
-        object_marker.header.frame_id = "ar_marker_15";
+        object_marker.header.frame_id = SHELF_FRAME;
         object_marker.type = visualization_msgs::Marker::CUBE;
         object_marker.pose = object.pose;
         object_marker.scale = object.dimensions;
@@ -150,6 +151,7 @@ void VisualizeObjects(ObjectRecognizer recognizer, PointCloudC::Ptr cloud, const
     ROS_INFO("Back in callback");
     std::vector<std::string> names;
     std::vector<geometry_msgs::PoseStamped> poses;
+    std::vector<geometry_msgs::Vector3> dimensions;
     for (size_t i = 0; i < objects.size(); ++i) {
         const Object& object = objects[i];
 
@@ -157,7 +159,7 @@ void VisualizeObjects(ObjectRecognizer recognizer, PointCloudC::Ptr cloud, const
         visualization_msgs::Marker object_marker;
         object_marker.ns = "objects";
         object_marker.id = i;
-        object_marker.header.frame_id = "ar_marker_15";
+        object_marker.header.frame_id = SHELF_FRAME;
         object_marker.type = visualization_msgs::Marker::CUBE;
         object_marker.pose = object.pose;
         object_marker.scale = object.dimensions;
@@ -180,7 +182,7 @@ void VisualizeObjects(ObjectRecognizer recognizer, PointCloudC::Ptr cloud, const
         visualization_msgs::Marker name_marker;
         name_marker.ns = "recognition";
         name_marker.id = i;
-        name_marker.header.frame_id = "ar_marker_15";
+        name_marker.header.frame_id = SHELF_FRAME;
         name_marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
         name_marker.pose.position = object.pose.position;
         name_marker.pose.position.z += 0.1;
@@ -196,12 +198,13 @@ void VisualizeObjects(ObjectRecognizer recognizer, PointCloudC::Ptr cloud, const
         marker_pub.publish(name_marker);
 
         geometry_msgs::PoseStamped pose;
-        pose.header.frame_id = "ar_marker_15";
+        pose.header.frame_id = SHELF_FRAME;
         pose.pose.position = object.pose.position;
         pose.pose.orientation.w = 1;
 
         names.push_back(name);
         poses.push_back(pose);
+        dimensions.push_back(object.dimensions);
     }
 
     // std::string* nameArr = &names[0];
@@ -209,6 +212,7 @@ void VisualizeObjects(ObjectRecognizer recognizer, PointCloudC::Ptr cloud, const
     perception_msgs::ObjectPose objectPose;
     objectPose.names = names;
     objectPose.poses = poses;
+    objectPose.dimensions = dimensions;
     object_pub.publish(objectPose);
 }
 

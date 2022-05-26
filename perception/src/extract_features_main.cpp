@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
   std::vector<perception::Object> objects;
   perception::SegmentObjects(pcl_cloud, &objects);
   if (objects.size() != 1) {
-    ROS_ERROR("%s: expected to see exactly one object, found %d", label.c_str(), objects.size());
+    ROS_ERROR("%s: expected to see exactly one object, found %lu", label.c_str(), objects.size());
     return 1;
   }
 

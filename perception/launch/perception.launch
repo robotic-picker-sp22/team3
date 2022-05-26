@@ -1,4 +1,8 @@
+<!-- Launches both the AR marker code and the point cloud demo code. We can 
+continue putting relevant launch files and nodes here so that the entire 
+perception pipline can be run here.  -->
 <launch>
+	<arg name="cam" default="/head_camera/depth_registered/points"/>
 	<arg name="data_dir" default="/home/capstone/catkin_ws/src/fetch-picker/combined_labels"/>
 	<param name="ec_cluster_tolerance" value="0.02" />
 	<param name="ec_min_cluster_size" value="100" />
@@ -11,7 +15,11 @@
 	<param name="crop_min_z" value="-1" />
 	<param name="crop_max_z" value="1" />
 	<param name="size_weight" value="0.8" />
+	<include file="$(find robot_api)/launch/ar_desktop.launch">
+		<arg name="cam_image_topic" value="$(arg cam)" />
+	</include>
+	<node pkg="perception" type="shelf_frame_publisher.py" name="shelf_frame_publisher" args="$(arg data_dir)" output="screen" />
 	<node pkg="perception" type="point_cloud_demo" name="point_cloud_demo" args="$(arg data_dir)" output="screen">
-		<remap from="cloud_in" to="/head_camera/depth_registered/points" />
+		<remap from="cloud_in" to="$(arg cam)" />
 	</node>
 </launch>

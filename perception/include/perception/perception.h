@@ -1,0 +1,6 @@
+#ifndef _PERCEPTION_PERCEPTION_H_
+#define _PERCEPTION_PERCEPTION_H_
+
+#define SHELF_FRAME "shelf_frame"
+
+#endif  // _PERCEPTION_PERCEPTION_H_
