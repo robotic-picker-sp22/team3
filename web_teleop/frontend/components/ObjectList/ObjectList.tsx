@@ -2,6 +2,7 @@ import { useState } from "react"
 import ROSLIB from "roslib"
 import { Autocomplete } from '@mantine/core';
 import { objectList } from '../../utils/constants'
+import ObjectListItem from "../ObjectListItem/ObjectListItem";
 
 type ObjectListProps = {
     ros: ROSLIB.Ros
@@ -18,10 +19,26 @@ export default function ObjectList({ ros }: ObjectListProps) {
         name: SERVICE_NAME,
         serviceType: SERVICE_TYPE,
     })
+
+    const createDeleteCallback = (i: number) => {
+        return (objectName: string) => {
+            setObjects(oldList => {
+                if (oldList[i] == objectName) {
+                    return oldList.splice(i, 1)
+                } else {
+                    console.error(`Could not remove item: ${objectName} at index ${i}`)
+                    return oldList
+                }
+            }
+            )
+        }
+    }
     return (
         <div>
             <ul>
-                {objects.map((object, i) => <li key={`${object}-${i}`}>{object}</li>)}
+                {objects.map((object, i) => (
+                    <ObjectListItem key={`${object}-${i}`} object={object} deleteCallback={createDeleteCallback(i)}/>
+                ))}
             </ul>
             <input type="text" onChange={e => {
                 setInputText(e.currentTarget.value || "")
@@ -35,10 +52,12 @@ export default function ObjectList({ ros }: ObjectListProps) {
                 error={!objectList.includes(inputText)}
             />
             <button onClick={() => {
-                setObjects(old => {
-                    return [...old, inputText]
-                })
-                setInputText("")
+                if (objectList.includes(inputText)) {
+                    setObjects(old => {
+                        return [...old, inputText]
+                    })
+                    setInputText("")
+                }
             }}>Add Item</button>
             <button onClick={() => {
 

@@ -1,9 +1,13 @@
 
-
-export default function ObjectListItem() {
+type ObjectListItemProps = {
+    object: string
+    deleteCallback: (object: string) => void
+}
+export default function ObjectListItem({ object, deleteCallback }: ObjectListItemProps) {
     return (
         <li>
-            <input type="text"/>
+            <p>{object}</p>
+            <button onClick={() => deleteCallback(object)}>X</button>
         </li>
     )
 }
