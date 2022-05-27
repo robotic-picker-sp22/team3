@@ -1,6 +1,17 @@
-<!-- Launches both the AR marker code and the point cloud demo code. We can 
-continue putting relevant launch files and nodes here so that the entire 
-perception pipline can be run here.  -->
+<!-- 
+LAUNCHES:
+- The AR marker code to publish the location of the AR tags
+- The shelf frame publisher to use the AR tags to publish a frame 
+  for the shelf
+- The point cloud demo to crop and identify objects
+USAGE:
+Running in simulation:
+(must already be running roscore and gazebo)
+> roslaunch perception perception.launch cam:=mock_point_cloud
+Running on the real robot:
+default camera (arg cam) should be set to "/head_camera/depth_registered/points"
+> roslaunch perception perception.launch
+-->
 <launch>
 	<arg name="cam" default="/head_camera/depth_registered/points"/>
 	<arg name="data_dir" default="/home/capstone/catkin_ws/src/fetch-picker/combined_labels"/>

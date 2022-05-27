@@ -1,0 +1,71 @@
+starting position
+header: 
+  seq: 0
+  stamp: 
+    secs: 0
+    nsecs:         0
+  frame_id: "base_link"
+pose: 
+  position: 
+    x: 0.4323596954345703
+    y: 0.09097349643707275
+    z: 0.9650132656097412
+  orientation: 
+    x: -0.0001998494699364528
+    y: 0.02093467116355896
+    z: -0.009558026678860188
+    w: 0.9997351169586182
+
+Drop Intermediate 1
+header: 
+  seq: 0
+  stamp: 
+    secs: 0
+    nsecs:         0
+  frame_id: "base_link"
+pose: 
+  position: 
+    x: 0.5148853659629822
+    y: 0.011607034131884575
+    z: 0.8320705890655518
+  orientation: 
+    x: 0.0021663254592567682
+    y: 0.26713114976882935
+    z: -0.009311444126069546
+    w: 0.9636127352714539
+
+Drop Intermediate 2
+eader: 
+  seq: 0
+  stamp: 
+    secs: 0
+    nsecs:         0
+  frame_id: "base_link"
+pose: 
+  position: 
+    x: 0.5997003316879272
+    y: 0.009853675961494446
+    z: 0.6659631133079529
+  orientation: 
+    x: 0.0032368043903261423
+    y: 0.37761861085891724
+    z: -0.008995501324534416
+    w: 0.9259118437767029
+
+Drop Intermediate 3
+header: 
+  seq: 0
+  stamp: 
+    secs: 0
+    nsecs:         0
+  frame_id: "base_link"
+pose: 
+  position: 
+    x: 0.7164484858512878
+    y: 0.007487976923584938
+    z: 0.4970704913139343
+  orientation: 
+    x: 0.005603693891316652
+    y: 0.6194995641708374
+    z: -0.007745636161416769
+    w: 0.7849387526512146

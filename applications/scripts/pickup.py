@@ -1,11 +1,14 @@
 #! /usr/bin/env python3
 
 from time import sleep
+from gripper_marker import gripper_markers
+from perception import SHELF_FRAME_NAME
+
 import robot_api
 import rospy
 from geometry_msgs.msg import PoseStamped, Quaternion
 from perception_msgs.msg import ObjectPose
-from ar_track_alvar_msgs.msg import AlvarMarkers
+from visualization_msgs.msg import Marker
 
 ''' Run before starting
 The AR marker stuff:
@@ -32,11 +35,16 @@ PRE_PICKUP_DIST = 0.2
 GRIPPER_LENGTH = 0.166
 GRIPPER_MARGIN = 0.04
 
+
 AR_FLAT = Quaternion()
+# AR_FLAT.x = 0
+# AR_FLAT.y = 0
+# AR_FLAT.z = 0
+# AR_FLAT.w = 1
 AR_FLAT.x = 0.0
-AR_FLAT.y = .707
-AR_FLAT.z = 0
-AR_FLAT.w = .707
+AR_FLAT.y = 0
+AR_FLAT.z = .707
+AR_FLAT.w = -.707
 
 
 START_POSE = PoseStamped()
@@ -96,12 +104,8 @@ class Pickup():
         self.silent = silent
         self.arm = robot_api.Arm()
         self.gripper = robot_api.Gripper()
-        if listen:
-            rospy.Subscriber(TAG_POSE_TOPIC, AlvarMarkers, self._tag_pose_callback)
-            rospy.Subscriber(OBJECT_POSE_TOPIC, ObjectPose, self._get_pose)
-
-    def _tag_pose_callback(self, msg):
-        pass
+        self._marker_publisher = rospy.Publisher('visualization_marker', Marker, queue_size=5)
+        rospy.Subscriber(OBJECT_POSE_TOPIC, ObjectPose, self._get_pose)
 
     def _get_pose(self, msg):
         old_objects = list(self.objects)
@@ -116,7 +120,7 @@ class Pickup():
                 rospy.loginfo(f'Found new object {name}')
             self.objects.append(new_obj)
         for obj in old_objects:
-            print('Lost view of %s' % new_obj['name'])
+            rospy.loginfo('Lost view of %s' % new_obj['name'])
         # if not self.silent:
         #     rospy.loginfo(f"Sees {len(self.objects)} objects")
 
@@ -139,64 +143,86 @@ class Pickup():
             return False
         if not self.silent:
             rospy.loginfo(f"Picking up {name}")
-        self.prepick(object)
-        self.pick(object)
-        self.place(object)
-        self.in_movement = False
+        try:
+            self.prepick(object)
+            self.pick(object)
+            self.place(object)
+        except:
+            self.in_movement = False
+            return False
+        finally:
+            self.in_movement = False
         return True
 
-
     def prepick(self, obj):
-        self.in_movement = True
         self.start_pose()
-        self.clear_area(obj)
-        self.in_movement = False
-
+        # TODO: fix the math for the new shelf frame
+        # self.clear_area(obj)
 
     def pick(self, obj):
         self.in_movement = True
         pose = obj['pose']
-        self.pickup_object(pose)
+        result = self.pickup_object(pose)
+        if not result:
+            rospy.logerr(f"Could not pick up {obj['name']}")
+            self.start_pose()
         self.in_movement = False
-
+        return result
 
     def place(self, obj):
-        self.in_movement = True
         self.drop()
         self.start_pose()
-        self.in_movement = False
-
 
     def pickup_object(self, pose):
         self.gripper.open()
-        pose.pose.position.x += GRIPPER_MARGIN
-        pose.pose.position.z += GRIPPER_LENGTH + PRE_PICKUP_DIST
+        pose.pose.position.z += GRIPPER_MARGIN
+        pose.pose.position.y += GRIPPER_LENGTH + PRE_PICKUP_DIST
         pose.pose.orientation = AR_FLAT
         if not self.silent:
             rospy.loginfo(f"{pose}")
-        self.arm.move_to_pose_ik(pose)
-        pose.pose.position.x -= GRIPPER_MARGIN
-        pose.pose.position.z -= PRE_PICKUP_DIST + 0.02
-        self.arm.move_to_pose_ik(pose)
+        if not self.move_to_pose(pose):
+            rospy.logerr("Failed to move to pregrasp")
+            return False
+
+        pose.pose.position.z -= GRIPPER_MARGIN
+        pose.pose.position.y -= PRE_PICKUP_DIST + 0.02
+        if not self.move_to_pose(pose): return False
+
         self.gripper.close(max_effort=60)
-        pose.pose.position.x += GRIPPER_MARGIN
-        pose.pose.position.z += PRE_PICKUP_DIST + 0.02
-        self.arm.move_to_pose_ik(pose)
+        pose.pose.position.z += GRIPPER_MARGIN
+        pose.pose.position.y += PRE_PICKUP_DIST + 0.02
+        if not self.move_to_pose(pose): return False
+
+        return True
+
+    def visualize_gripper(self, pose: PoseStamped):
+        marker = Marker()
+        marker.type = Marker.ARROW
+        marker.header.frame_id = pose.header.frame_id
+        marker.pose = pose.pose
+        # Scale
+        marker.scale.x = GRIPPER_LENGTH
+        marker.scale.y = 0.03
+        marker.scale.z = 0.03
+        # Color
+        marker.color.r = 1.0
+        marker.color.a = 0.6
+        self._marker_publisher.publish(marker)
 
 
     def drop(self):
         if not self.silent:
             rospy.loginfo("Starting Drop")
-        self.arm.move_to_pose_ik(START_POSE)
+        self.move_to_pose(START_POSE)
         if not self.silent:
             rospy.loginfo("Moving to Drop 1")
-        self.arm.move_to_pose_ik(DROP_1)
+        self.move_to_pose(DROP_1)
         if not self.silent:
             rospy.loginfo("Moving to Drop 2")
-        self.arm.move_to_pose_ik(DROP_2)
+        self.move_to_pose(DROP_2)
         if not self.silent:
             rospy.loginfo("Moving to Drop 3")
-        self.arm.move_to_pose_ik(DROP_3)
+        self.move_to_pose(DROP_3)
         self.gripper.open()
         if not self.silent:
             rospy.loginfo("Finished Drop")
@@ -205,11 +231,15 @@ class Pickup():
         if not self.silent:
             rospy.loginfo("Going to start pose")
         for i in range(5):
-            if self.arm.move_to_pose_ik(START_POSE):
+            if self.move_to_pose(START_POSE):
                 return
             sleep(1)
         rospy.logerr('Could not move to start')
         exit(-1)
+
+    def move_to_pose(self, pose: PoseStamped) -> bool:
+        self.visualize_gripper(pose)
+        return self.arm.move_to_pose_ik(pose)
 
     def clear_area(self, object: dict):
         ''' Clears all objects away from the path into the bin for 
@@ -237,21 +267,21 @@ class Pickup():
         if not to_right: offset *= -1
         pose.pose.position.y += offset
         pose.pose.position.z += GRIPPER_LENGTH + PRE_PICKUP_DIST
-        self.arm.move_to_pose_ik(pose)
+        self.move_to_pose(pose)
         # Just abt to push position
         pose.pose.position.z -= PRE_PICKUP_DIST
-        self.arm.move_to_pose_ik(pose)
+        self.move_to_pose(pose)
         # Push position
         pose.pose.position.y = -0.10 #TODO: change this to be variable
-        self.arm.move_to_pose_ik(pose)
+        self.move_to_pose(pose)
         # Back off
         offset = GRIPPER_MARGIN
         if not to_right: offset *= -1
         pose.pose.position.y += offset
-        self.arm.move_to_pose_ik(pose)
+        self.move_to_pose(pose)
         # Pull out
         pose.pose.position.z += PRE_PICKUP_DIST
-        self.arm.move_to_pose_ik(pose)
+        self.move_to_pose(pose)
 
 
 
