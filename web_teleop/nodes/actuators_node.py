@@ -21,9 +21,9 @@ class ActuatorServer(object):
         self._head = robot_api.Head()
         self._arm = robot_api.Arm()
         self._nav_goal = map_annotator.NavGoal()
-        rospy.logerr("waiting for main_picker_node")
+        rospy.loginfo("waiting for main_picker_node")
         rospy.wait_for_service('main_picker_object_list')
-        rospy.logerr("finished waiting for main_picker_node")
+        rospy.loginfo("finished waiting for main_picker_node")
         self.begin_pickup = rospy.ServiceProxy('main_picker_object_list', PickupObjectList)
 
     def handle_set_torso(self, request):

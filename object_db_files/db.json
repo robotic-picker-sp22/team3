@@ -1,0 +1,17 @@
+{
+    "pill_box": {
+        "bins": [[2, 0]],
+        "grip_effort": 40,
+        "drop_height": 0.4
+    },
+    "pill_bottle": {
+        "bins": [[2, 0]],
+        "grip_effort": 50,
+        "drop_height": 0.4
+    },
+    "box": {
+        "bins": [[0, 0]],
+        "grip_effort": 80,
+        "drop_height": 0.2
+    }
+}

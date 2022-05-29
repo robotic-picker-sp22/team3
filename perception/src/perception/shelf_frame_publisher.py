@@ -18,30 +18,47 @@ import tf.transformations as tft
 import geometry_msgs.msg
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from bin_cropper import SHELF_FRAME_NAME
+import robot_api
 
-
+USE_SIM_SETTINGS = False
 TAG_POSE_TOPIC = '/ar_pose_marker'
 TF_TOPIC = '/tf'
 
 
 # Names of the three expected markers on the shelf
-EXPECTED_MARKERS = [15, 5, 'ar_marker_something']
+EXPECTED_MARKERS = [15, 5, 4]
 # EXPECTED_MARKERS = [15]
 
+if USE_SIM_SETTINGS:
 # The distance from the markers to the shelf edge
-# 0.220987 from marker 15 to 5
 MARKER_15_DIST = 0.02
 MARKER_15_TO_5_DIST = 0.2209874427225697
+    MARKER_5_DIST = MARKER_15_DIST + MARKER_15_TO_5_DIST
+    MARKER_5_TO_4_DIST = 0.35778027901128795
+    MARKER_4_DIST = MARKER_5_DIST + MARKER_5_TO_4_DIST
 DEFAULT_MARKER_DIST = {
-        15: MARKER_15_DIST,
-        5: MARKER_15_DIST+MARKER_15_TO_5_DIST,
-        'something': 2.3
+            EXPECTED_MARKERS[0]: MARKER_15_DIST,
+            EXPECTED_MARKERS[1]: MARKER_5_DIST,
+            EXPECTED_MARKERS[2]: MARKER_4_DIST
     } # TODO: this will have to be tuned
+else:
+    # Distances between markers on the shelf
+    MARKER_15_DIST = 0.035
+    MARKER_15_TO_5_DIST = 0.4079494706274665
+    MARKER_5_DIST = MARKER_15_DIST + MARKER_15_TO_5_DIST
+    MARKER_5_TO_4_DIST = 0.35778027901128795
+    MARKER_4_DIST = MARKER_5_DIST + MARKER_5_TO_4_DIST
+    # Distance from each marker to the left corner of the shelf
+    DEFAULT_MARKER_DIST = {
+            EXPECTED_MARKERS[0]: MARKER_15_DIST,
+            EXPECTED_MARKERS[1]: MARKER_5_DIST,
+            EXPECTED_MARKERS[2]: MARKER_4_DIST
+        }
 
 
 # Default angle offsets from base_link
-DEFAULT_ROLL = math.radians(90)
-DEFAULT_PITCH = math.radians(90)
+DEFAULT_ROLL = math.radians(0)
+DEFAULT_PITCH = math.radians(0)
 # The height of the shelf off the ground
 DEFAULT_SHELF_HEIGHT = 1.52 # TODO: tune this
 
@@ -50,7 +67,10 @@ def calculate_shelf_angle(x1, y1, x2, y2):
     '''
     dx = abs(x1 - x2)
     dy = abs(y1 - y2)
-    return math.atan(dy/dx)
+    angle = math.atan(dy/dx)
+    if (x1 < x2):
+        angle = math.radians(180) - angle
+    return angle
 
 def translate_point(x1, y1, angle, distance):
     ''' Takes a point, angle, and distance then returns a new translated point
@@ -107,7 +127,7 @@ class ShelfMarkerBroadcaster:
         self.pub_tf = rospy.Publisher("/tf", tf2_msgs.msg.TFMessage, queue_size=1)
         self.frame_transform = None
         rospy.loginfo("Waiting for markers...")
-        while self.markers is None:
+        while len(self.markers) < 1:
             rospy.sleep(0.5)
         rospy.loginfo("Found markers, calculating transform...")
         while self.frame_transform is None:
@@ -201,7 +221,7 @@ class ShelfMarkerBroadcaster:
         uncertain_y = max(ys) - min(ys)
         avg_x = sum(xs) / len(xs)
         avg_y = sum(ys) / len(ys)
-        rospy.loginfo(f'Calculated a shelf position of ({round(avg_x, 3)}, {round(avg_y, 3)}) with uncertainty: x={uncertain_x} y={uncertain_y}')
+        rospy.loginfo(f'Calculated a shelf position of ({round(avg_x, 3)}, {round(avg_y, 3)}) with uncertainty: x={round(uncertain_x, 5)} y={round(uncertain_y, 5)}')
         return avg_x, avg_y
         
             
