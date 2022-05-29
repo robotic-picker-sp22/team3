@@ -23,13 +23,15 @@ class MainPickerNode:
         # read from file
         self.object_db = self._parse_db_file(db_fpath)
         self._picker_client = actionlib.SimpleActionClient('pick_request', PickRequestAction)
+        rospy.loginfo("Waiting for picking server...")
         self._picker_client.wait_for_server()
+        rospy.loginfo('Found picking action server.')
         self._crop_row = None
         self._crop_col = None
         self._crop(0, 0)
 
         
-    def crop(self, row: int, col: int):
+    def _crop(self, row: int, col: int):
         ''' Crops the vision point cloud to a given bin row and column
         '''
         crop_to_bin(row, col)
@@ -55,7 +57,7 @@ class MainPickerNode:
                     db[objectName]['bins'].append((row,col))
         elif fpath.endswith('.json'):
             with open(fpath, 'r') as file:
-                db = json.load(file) 
+                db = dict(json.load(file))
         else:
             rospy.logerr(f'Unexpected file type {fpath}')
         return db
@@ -120,7 +122,6 @@ class MainPickerNode:
 
 def main(db_fpath: str):
     rospy.init_node('main_picker_node')
-    print('waiting for time...')
     wait_for_time()
 
     server = MainPickerNode(db_fpath)
@@ -151,5 +152,5 @@ if __name__ == "__main__":
         if not os.path.isfile(db_file):
             rospy.logerr(f"{db_file} does not exist")
             exit()
-        print(f'Using input path: {db_file}')
+    print(f'Using database path: {db_file}')
     main(db_file)

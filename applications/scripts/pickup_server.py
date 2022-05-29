@@ -16,11 +16,13 @@ def wait_for_time():
     while rospy.Time().now().to_sec() == 0:
         pass
 
-class PickupServer():
-    def __init__(self) -> None:
+class PickupServer:
+
+    def __init__(self):
         self._pick_request_server = actionlib.SimpleActionServer('pick_request', PickRequestAction, execute_cb=self.execute_pick_request, auto_start=False)
         self._pick_request_server.start()
         self._pickup = Pickup()
+        rospy.loginfo('Initialized pickup server!')
 
     def execute_pick_request(self, goal: PickRequestGoal):
         feedback = PickRequestFeedback()

@@ -26,10 +26,13 @@ default camera (arg cam) should be set to "/head_camera/depth_registered/points"
 	<param name="crop_min_z" value="-1" />
 	<param name="crop_max_z" value="1" />
 	<param name="size_weight" value="0.8" />
+	
 	<include file="$(find robot_api)/launch/ar_desktop.launch">
 		<arg name="cam_image_topic" value="$(arg cam)" />
 	</include>
-	<node pkg="perception" type="shelf_frame_publisher.py" name="shelf_frame_publisher" args="$(arg data_dir)" output="screen" />
+	
+	<node pkg="perception" type="shelf_frame_publisher.py" name="shelf_frame_publisher" output="screen" />
+	
 	<node pkg="perception" type="point_cloud_demo" name="point_cloud_demo" args="$(arg data_dir)" output="screen">
 		<remap from="cloud_in" to="$(arg cam)" />
 	</node>
