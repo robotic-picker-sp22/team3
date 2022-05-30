@@ -25,7 +25,7 @@ class MainPickerNode:
         self._picker_client = actionlib.SimpleActionClient('pick_request', PickRequestAction)
         rospy.loginfo("Waiting for picking server...")
         self._picker_client.wait_for_server()
-        rospy.loginfo('Found picking action server.')
+        rospy.loginfo('Found picking server.')
         self._crop_row = None
         self._crop_col = None
         self._crop(0, 0)

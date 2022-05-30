@@ -4,9 +4,9 @@ import rospy
 import rospy
 from geometry_msgs.msg import Vector3, Pose
 from visualization_msgs.msg import Marker
+from perception.shelf_frame_publisher import SHELF_FRAME_NAME
 
 # Name of the new frame for the shelf
-SHELF_FRAME_NAME = 'shelf_frame'
 
 def wait_for_time():
     """Wait for simulated time to begin.
@@ -298,7 +298,7 @@ def crop_to_bin(row: int, col: int):
         width = LARGE_BIN_WIDTH
         z = BIG_ROW_POSITIONS[row]
     depth = BIN_DEPTH
-    rospy.loginfo(f'cropping to ({x}, {y}, {z})')
+    # rospy.loginfo(f'cropping to ({x}, {y}, {z})')
     min_x = x - width/2
     min_y = y - depth/2
     min_z = z - height/2

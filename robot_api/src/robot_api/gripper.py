@@ -23,12 +23,14 @@ class Gripper(object):
         # TODO: Wait for server
         self._client.wait_for_server()
 
-    def open(self):
+    def open(self, width=OPENED_POS):
         """Opens the gripper.
         """
         # TODO: Create goal
+        width = min(width, OPENED_POS)
+        assert(CLOSED_POS <= width and width <= OPENED_POS), f'{width} invalid value'
         goal = control_msgs.msg.GripperCommandGoal()
-        goal.command.position = OPENED_POS
+        goal.command.position = width
         goal.command.max_effort = self.MIN_EFFORT
         # TODO: Send goal
         self._client.send_goal(goal)

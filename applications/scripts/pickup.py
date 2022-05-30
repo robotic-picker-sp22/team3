@@ -6,9 +6,12 @@ from perception import SHELF_FRAME_NAME
 
 import robot_api
 import rospy
+import copy
 from geometry_msgs.msg import PoseStamped, Quaternion
 from perception_msgs.msg import ObjectPose
 from visualization_msgs.msg import Marker
+from perception import SHELF_HEIGHT
+import json
 
 ''' Run before starting
 The AR marker stuff:
@@ -31,9 +34,10 @@ def print_usage():
 
 TAG_POSE_TOPIC = '/ar_pose_marker'
 OBJECT_POSE_TOPIC = "/object_pose"
-PRE_PICKUP_DIST = 0.2
+PRE_PICKUP_DIST = 0.16
 GRIPPER_LENGTH = 0.166
 GRIPPER_MARGIN = 0.04
+FINGER_LENGTH = 0.03
 
 
 AR_FLAT = Quaternion()
@@ -97,36 +101,61 @@ def wait_for_time():
 
 class Pickup():
 
+    # The list of visible objects
     objects = []
-    in_movement = False
 
-    def __init__(self, listen=True, silent=False) -> None:
+    # When true, stops recording object poses
+    pause_perception = False
+
+    # Current pose of the gripper/arm
+    _gripper_pose: PoseStamped = None
+
+    def __init__(self, db_fpath: str, listen=True, silent=False) -> None:
+        rospy.loginfo('Initializing Pickup object...')
         self.silent = silent
-        self.arm = robot_api.Arm()
-        self.gripper = robot_api.Gripper()
         self._marker_publisher = rospy.Publisher('visualization_marker', Marker, queue_size=5)
-        rospy.Subscriber(OBJECT_POSE_TOPIC, ObjectPose, self._get_pose)
+        self.obj_db = self._parse_db_file(db_fpath)
+        self._init_robot()
+        rospy.Subscriber(OBJECT_POSE_TOPIC, ObjectPose, self._get_obj_data)                                                 
 
-    def _get_pose(self, msg):
-        old_objects = list(self.objects)
+    def _init_robot(self):
+        ''' Initializes the robot arm, head, torso, and gripper
+        '''
+        rospy.loginfo('Init robot hardware...')
+        self.torso = robot_api.Torso()
+        self.arm = robot_api.Arm()
+        self.head = robot_api.Head()
+        self.gripper = robot_api.Gripper()
+        self.torso.set_height(0.4)
+        self.start_pose()
+        self.head.look_at('base_link', 0.8, 0, SHELF_HEIGHT-0.08)
+        rospy.loginfo("Robot hardware initialized.")
+
+    def _get_obj_data(self, msg):
+        ''' Callback from the object pose subscriber to update the local
+        object names, poses, and dimensions for what's visible to the robot
+        '''
+        # old_objects = list(self.objects)
+        old_names = [obj['name'] for obj in self.objects]
         self.objects.clear()
-        if self.in_movement:
+        if self.pause_perception:
             return
         for name, pose, dimensions in zip(msg.names, msg.poses, msg.dimensions):
             new_obj = {"name": name, "pose": pose, "dimensions": dimensions}
-            if new_obj in old_objects:
-                old_objects.remove(new_obj)
+            if new_obj['name'] in old_names:
+                old_names.remove(new_obj['name'])
             else:
                 rospy.loginfo(f'Found new object {name}')
             self.objects.append(new_obj)
-        for obj in old_objects:
-            rospy.loginfo('Lost view of %s' % new_obj['name'])
+        for old_name in old_names:
+            rospy.loginfo('Lost view of %s' % old_name)
         # if not self.silent:
         #     rospy.loginfo(f"Sees {len(self.objects)} objects")
 
     def get_object(self, obj_name: str) -> dict:
-        # Returns the object descriptor dictionary, or None
-        # if couldn't find the object
+        ''' Returns the object descriptor dictionary, or None
+        if couldn't find the object
+        '''
         obj_name = obj_name.lower()
         for object in self.objects:
             if object['name'].lower() == obj_name:
@@ -134,65 +163,123 @@ class Pickup():
         return None
 
     
-    def pickup(self, name):
+    def old_pickup(self, name):
+        ''' DEPRECIATED
+        Pre-picks, picks, and drops the selected object
+        '''
         object = self.get_object(name)
-        self.in_movement = True
         if object is None:
             if not self.silent:
                 rospy.logerr(f"Couldn't find object {name}")
             return False
         if not self.silent:
             rospy.loginfo(f"Picking up {name}")
+        self.pause_perception = True
+        result = True
         try:
             self.prepick(object)
             self.pick(object)
             self.place(object)
         except:
-            self.in_movement = False
-            return False
-        finally:
-            self.in_movement = False
-        return True
+            result = False
+        self.pause_perception = False
+        return result
+
+
+    def copy_pose(self, obj):
+        ''' Returns a new copied pose from the object
+        '''
+        pose = PoseStamped()
+        pose.header.frame_id = obj['pose'].header.frame_id
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position = copy.deepcopy(obj['pose'].pose.position)
+        # pose.pose.position.x = obj['pose'].pose.position.x
+        # pose.pose.position.y = obj['pose'].pose.position.y
+        # pose.pose.position.z = obj['pose'].pose.position.z
+        pose.pose.orientation = AR_FLAT
+        return pose
+
+    '''
+    MAIN PICKING FUNCTIONS
+    The three functions make up the 3 pieces of the picking logic, where
+    each part has a required starting and ending state
+
+    PREPICK:
+        START: the gripper must be in a neutral position outside of the 
+               shelf before this function is called
+        END: ends in a position directly in front of the selected object
+             ready to move forward and pick
+    PICK:
+        START: starts in a position directly in front of the object
+        END: must end grasping the object in a neutral location outside of 
+             the shelf
+    PLACE: 
+        START: outside of the shelf grasping the object
+        ENDS: in a neutral position outside of the shelf
+    '''
+
 
     def prepick(self, obj):
-        self.start_pose()
-        # TODO: fix the math for the new shelf frame
-        # self.clear_area(obj)
+        ''' Gets ready to pick up the object
+        '''
+        self.pause_perception = True
+        rospy.loginfo(f'prepick {obj["name"]}')
+        print(obj['pose'])
+        self.gripper.close()
+        if not self.clear_area(obj):
+            pose = self.copy_pose(obj)
+            # Get the gripper into the pre-pickup position
+            pose.pose.position.z += GRIPPER_MARGIN
+            pose.pose.position.y += GRIPPER_LENGTH + PRE_PICKUP_DIST
+            if not self.move_to_pose(pose):
+                rospy.logerr("Failed to move to pregrasp.")
+                return False
+        return True
+        # self.pause_perception = False
+
 
     def pick(self, obj):
-        self.in_movement = True
-        pose = obj['pose']
-        result = self.pickup_object(pose)
-        if not result:
-            rospy.logerr(f"Could not pick up {obj['name']}")
-            self.start_pose()
-        self.in_movement = False
+        ''' Moves the gripper forward to pick up the obj and
+        out of the bin
+        '''
+        rospy.loginfo(f'pick {obj["name"]}')
+        self.pause_perception = True
+        print(f'object {obj["name"]}\n{obj["pose"]}')
+        result = self.pickup_object(obj)
+        self.pause_perception = False
         return result
+        
 
     def place(self, obj):
         self.drop()
         self.start_pose()
 
-    def pickup_object(self, pose):
-        self.gripper.open()
-        pose.pose.position.z += GRIPPER_MARGIN
-        pose.pose.position.y += GRIPPER_LENGTH + PRE_PICKUP_DIST
+
+    def pickup_object(self, obj):
+        pose = self.copy_pose(obj)
+        obj_depth = obj['dimensions'].y/2 + 0.01
+        obj_width = obj['dimensions'].x + 0.01
+        # Move to just infront of the object
+        rospy.loginfo(f'obj depth {obj_depth}')
+        pose.pose.position.y += GRIPPER_LENGTH + FINGER_LENGTH + obj_depth
         pose.pose.orientation = AR_FLAT
-        if not self.silent:
-            rospy.loginfo(f"{pose}")
-        if not self.move_to_pose(pose):
-            rospy.logerr("Failed to move to pregrasp")
+        if not self.move_to_pose(pose): 
+            rospy.logerr('Just pre-grasp error')
             return False
-
-        pose.pose.position.z -= GRIPPER_MARGIN
-        pose.pose.position.y -= PRE_PICKUP_DIST + 0.02
-        if not self.move_to_pose(pose): return False
-
-        self.gripper.close(max_effort=60)
+        # Grasp the object
+        rospy.loginfo(f"Opening gripper to width {obj_width}")
+        self.gripper.open(obj_width)
+        pose.pose.position.y -= FINGER_LENGTH + 0.03
+        if not self.move_to_pose(pose): 
+            rospy.logerr('Grasp error')
+            return False
+        effort = int(self.obj_db[obj['name']]['grip_effort'])
+        rospy.loginfo(f'Using effort {effort} for {obj["name"]}.')
+        self.gripper.close(max_effort=effort)
+        # Move out of the container
         pose.pose.position.z += GRIPPER_MARGIN
-        pose.pose.position.y += PRE_PICKUP_DIST + 0.02
+        pose.pose.position.y += PRE_PICKUP_DIST
         if not self.move_to_pose(pose): return False
-
         return True
 
     def visualize_gripper(self, pose: PoseStamped):
@@ -237,50 +324,57 @@ class Pickup():
         rospy.logerr('Could not move to start')
         exit(-1)
 
+
     def move_to_pose(self, pose: PoseStamped) -> bool:
         self.visualize_gripper(pose)
-        return self.arm.move_to_pose_ik(pose)
+        result = self.arm.move_to_pose_ik(pose)
+        self._gripper_pose = pose
+        return result
+
 
     def clear_area(self, object: dict):
         ''' Clears all objects away from the path into the bin for 
         the selected object
+        Returns true if it moved objects, false otherwise
         '''
-        BIN_CENTER = -0.12
-        goal_obj_left = object['pose'].pose.position.y > BIN_CENTER
+        BIN_CENTER = -0.14
+        goal_obj_left = object['pose'].pose.position.x > BIN_CENTER
         objs_front = self.any_infront(object)
         if len(objs_front) < 1:
-            return
-        self.gripper.close()
+            # rospy.loginfo(f'No objects infront of {object["name"]}')
+            return False
         for of in objs_front:
+            self.pause_perception = True
             self.push_object(of, goal_obj_left)
+            self.pause_perception = False
+        return True
+
 
     def push_object(self, object: dict, to_right: bool):
         ''' Pushes object to either side of the bin. Pushes
         right if to_right set, pushes left otherwise.
         '''
         rospy.loginfo('Pushing %s out of the way' % object['name'])
-        pose = object['pose']
+        pose = self.copy_pose(object)
         dimensions = object['dimensions']
         pose.pose.orientation = AR_FLAT
         # Pre-push position
-        offset = dimensions.y/2 + GRIPPER_MARGIN
+        offset = dimensions.x/2 + GRIPPER_MARGIN
         if not to_right: offset *= -1
-        pose.pose.position.y += offset
-        pose.pose.position.z += GRIPPER_LENGTH + PRE_PICKUP_DIST
+        pose.pose.position.x += offset
+        pose.pose.position.y += GRIPPER_LENGTH + PRE_PICKUP_DIST
+        pose.pose.position.x += GRIPPER_MARGIN
         self.move_to_pose(pose)
         # Just abt to push position
-        pose.pose.position.z -= PRE_PICKUP_DIST
+        pose.pose.position.y -= PRE_PICKUP_DIST
         self.move_to_pose(pose)
         # Push position
-        pose.pose.position.y = -0.10 #TODO: change this to be variable
+        pose.pose.position.x = -0.10 #TODO: change this to be variable
         self.move_to_pose(pose)
         # Back off
-        offset = GRIPPER_MARGIN
+        offset = GRIPPER_MARGIN 
         if not to_right: offset *= -1
-        pose.pose.position.y += offset
-        self.move_to_pose(pose)
-        # Pull out
-        pose.pose.position.z += PRE_PICKUP_DIST
+        pose.pose.position.x += offset
         self.move_to_pose(pose)
 
 
@@ -304,15 +398,15 @@ class Pickup():
         ''' Returns true if object_behind is behind object_infront,
         false otherwise
         '''
-        # Check z axis greater
-        if obj_b['pose'].pose.position.z >= obj_i['pose'].pose.position.z:
+        # Check object behind is further into the bin
+        if obj_b['pose'].pose.position.y >= obj_i['pose'].pose.position.y:
             rospy.loginfo('%s toward front of bin of %s' % (obj_b['name'], obj_i['name']))
             return False
-        # Else behind is further into bin, check overlap
-        b_min = obj_b['pose'].pose.position.y - obj_b['dimensions'].y/2
-        b_max = obj_b['pose'].pose.position.y + obj_b['dimensions'].y/2
-        i_min = obj_i['pose'].pose.position.y - obj_i['dimensions'].y/2
-        i_max = obj_i['pose'].pose.position.y + obj_i['dimensions'].y/2
+        # Else behind is further into bin, check horizontal overlap
+        b_min = obj_b['pose'].pose.position.x - obj_b['dimensions'].x/2
+        b_max = obj_b['pose'].pose.position.x + obj_b['dimensions'].x/2
+        i_min = obj_i['pose'].pose.position.x - obj_i['dimensions'].x/2
+        i_max = obj_i['pose'].pose.position.x + obj_i['dimensions'].x/2
         rospy.loginfo('obj_b %s' % obj_b['name'])
         rospy.loginfo(f'b_min {b_min}')
         rospy.loginfo(f'b_max {b_max}')
@@ -327,6 +421,27 @@ class Pickup():
         rospy.loginfo(f'bigger {bigger}')
         return min_in_range or max_in_range or bigger
 
+    
+    def _parse_db_file(self, fpath: str):
+        db = {}
+        if fpath.endswith('.csv'):
+            with open(fpath, 'r') as file:
+                for line in file:
+                    print(line)
+                    objectName, row, col = line.split(",")
+                    objectName = objectName.strip()
+                    if objectName not in db:
+                        db[objectName] = {'bins': []}
+                    row = int(row)
+                    col = int(col)
+                    db[objectName]['bins'].append((row,col))
+        elif fpath.endswith('.json'):
+            with open(fpath, 'r') as file:
+                db = dict(json.load(file))
+        else:
+            rospy.logerr(f'Unexpected file type {fpath}')
+        return db
+
 
 def main():
     rospy.init_node('pickup_demo')
@@ -335,7 +450,7 @@ def main():
     if len(argv) < 2:
         print_usage()
         return
-    pickup = Pickup()
+    pickup = Pickup('/home/capstone/catkin_ws/src/fetch-picker/object_db_files/db.json')
     sleep(1)
     rospy.loginfo(f"Finished initializing pickup")
     pickup.pickup(argv[1])

@@ -31,20 +31,24 @@ class Arm(object):
 
     def __init__(self):
         self._client = actionlib.SimpleActionClient(ACTION_NAME, control_msgs.msg.FollowJointTrajectoryAction)
+        rospy.loginfo('Arm waiting for follow joint trajectory action...')
         self._client.wait_for_server()
-        print('follow joint trajectory initialized')
+        # print('follow joint trajectory initialized')
         self._rf_client = actionlib.SimpleActionClient(RF_ACTION_NAME, QueryControllerStatesAction)
+        rospy.loginfo('Arm waiting for query controller states...')
         self._rf_client.wait_for_server()
-        print('query controller states initialized')
+        # print('query controller states initialized')
         self._move_group_client = actionlib.SimpleActionClient('move_group', MoveGroupAction)
+        # Wait for the client
+        rospy.loginfo('Arm waiting for move group...')
         self._move_group_client.wait_for_server()
-        print('move group client initialized')
+        rospy.loginfo('move group client initialized.')
         self._compute_ik = rospy.ServiceProxy('compute_ik', GetPositionIK)
         self._joint_state = None
         self._joint_state_subscriber = rospy.Subscriber('joint_states', JointState, self._set_joint_state)
         # link to MoveGroupAction doc:
         # http://docs.ros.org/en/indigo/api/moveit_msgs/html/action/MoveGroup.html
-        print('arm object initialized')
+        rospy.loginfo('Arm object initialized.')
 
 
     def _set_joint_state(self, msg: JointState):
@@ -237,7 +241,7 @@ class Arm(object):
         goal.trajectory.points = [point]
         self._client.send_goal(goal)
         self._client.wait_for_result()
-        rospy.loginfo(f'Done moving arm {list(zip(arm_joints.names(), arm_joints.values()))}')
+        # rospy.loginfo(f'Done moving arm {list(zip(arm_joints.names(), arm_joints.values()))}')
 
     def compute_ik(self, pose_stamped, timeout=rospy.Duration(5), print=True):
         """Computes inverse kinematics for the given pose.

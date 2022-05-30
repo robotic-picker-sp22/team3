@@ -17,10 +17,11 @@ import tf2_msgs.msg
 import tf.transformations as tft
 import geometry_msgs.msg
 from ar_track_alvar_msgs.msg import AlvarMarkers
-from bin_cropper import SHELF_FRAME_NAME
-import robot_api
 
-USE_SIM_SETTINGS = False
+SHELF_FRAME_NAME = 'shelf_frame'
+SHELF_HEIGHT = 1.52 # TODO: tune this
+
+USE_SIM_SETTINGS = True
 TAG_POSE_TOPIC = '/ar_pose_marker'
 TF_TOPIC = '/tf'
 
@@ -30,13 +31,13 @@ EXPECTED_MARKERS = [15, 5, 4]
 # EXPECTED_MARKERS = [15]
 
 if USE_SIM_SETTINGS:
-# The distance from the markers to the shelf edge
-MARKER_15_DIST = 0.02
-MARKER_15_TO_5_DIST = 0.2209874427225697
+    # The distance from the markers to the shelf edge
+    MARKER_15_DIST = 0.02
+    MARKER_15_TO_5_DIST = 0.2209874427225697
     MARKER_5_DIST = MARKER_15_DIST + MARKER_15_TO_5_DIST
     MARKER_5_TO_4_DIST = 0.35778027901128795
     MARKER_4_DIST = MARKER_5_DIST + MARKER_5_TO_4_DIST
-DEFAULT_MARKER_DIST = {
+    DEFAULT_MARKER_DIST = {
             EXPECTED_MARKERS[0]: MARKER_15_DIST,
             EXPECTED_MARKERS[1]: MARKER_5_DIST,
             EXPECTED_MARKERS[2]: MARKER_4_DIST
@@ -60,7 +61,6 @@ else:
 DEFAULT_ROLL = math.radians(0)
 DEFAULT_PITCH = math.radians(0)
 # The height of the shelf off the ground
-DEFAULT_SHELF_HEIGHT = 1.52 # TODO: tune this
 
 def calculate_shelf_angle(x1, y1, x2, y2):
     ''' Takes two points and returns the angle of the line through the points
@@ -239,7 +239,7 @@ class ShelfMarkerBroadcaster:
         # quaternion = tft.quaternion_from_euler(euler[0], euler[1], euler[2])
         self.frame_transform.translation.x = x
         self.frame_transform.translation.y = y
-        self.frame_transform.translation.z = rospy.get_param("shelf_height", DEFAULT_SHELF_HEIGHT)
+        self.frame_transform.translation.z = rospy.get_param("shelf_height", SHELF_HEIGHT)
         self.frame_transform.rotation.x = quaternion[0]
         self.frame_transform.rotation.y = quaternion[1]
         self.frame_transform.rotation.z = quaternion[2]
