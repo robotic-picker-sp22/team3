@@ -1,0 +1,26 @@
+
+.main{
+    border-style: solid;
+    background-color: 	#E0E0E0;
+    border-radius: 15px;
+    display: grid;
+    grid-template-columns: 1fr 60px;
+    margin: 0.5ch 0.5ch;
+}
+
+.main p {
+    margin: .5ch .5ch;
+}
+
+
+.button{
+    margin-left: 10px;
+    color: black;
+    background-color: white;
+    border-radius: 20px;
+}
+
+.button:hover{
+    color: white;
+    background-color: black;
+}

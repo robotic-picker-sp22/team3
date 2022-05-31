@@ -1,9 +1,12 @@
 import { useState } from "react"
 import ROSLIB from "roslib"
-import { Autocomplete } from '@mantine/core';
+import styles from "./ObjectList.module.css"
+import { Autocomplete, Title } from '@mantine/core';
 import { objectList } from '../../utils/constants'
 import ObjectListItem from "../ObjectListItem/ObjectListItem";
 import { formList, useForm } from "@mantine/form";
+import { Button } from '@mantine/core';
+
 
 type ObjectListProps = {
     ros: ROSLIB.Ros
@@ -25,7 +28,8 @@ export default function ObjectList({ ros }: ObjectListProps) {
         serviceType: SERVICE_TYPE,
     })
     return (
-        <div>
+        <div className={styles.main}>
+            <Title order={2}>Shopping Cart</Title>
             <ul>
                 {form.values.objects.map((object, i) => (
                     <ObjectListItem key={`${object}-${i}`} object={object} deleteCallback={() => form.removeListItem('objects', i)}/>
@@ -42,12 +46,13 @@ export default function ObjectList({ ros }: ObjectListProps) {
                 data={objectList}
                 error={!objectList.includes(inputText)}
             />
-            <button onClick={() => {
+            <Button className={styles.button} onClick={() => {
                 if (objectList.includes(inputText)) {
                     form.addListItem("objects", inputText)
                 }
-            }}>Add Item</button>
-            <button onClick={() => {
+                setInputText("")
+            }}>Add Item</Button>
+            <Button className={styles.button} onClick={() => {
                 const request = new ROSLIB.ServiceRequest({ objects: form.values.objects })
                 service.callService(request, (e) => {
                     console.log("Received Response", e);
@@ -56,7 +61,7 @@ export default function ObjectList({ ros }: ObjectListProps) {
                     console.log("Failed", e);
                 })
                 
-            }}>Send List</button>
+            }}>Send List</Button>
         </div>
     )
 }

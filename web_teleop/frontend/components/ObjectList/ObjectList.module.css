@@ -1,0 +1,17 @@
+
+.main{
+    margin: 10px;
+}
+.button{
+    margin-top: 10px;
+    margin-right: 10px;
+}
+
+.input{
+    margin-top: 30px;
+}
+
+.list{
+    list-style-type: none;
+    padding: 0px;
+}
