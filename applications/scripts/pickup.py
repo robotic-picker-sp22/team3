@@ -127,6 +127,7 @@ class Pickup():
         self.head = robot_api.Head()
         self.gripper = robot_api.Gripper()
         self.torso.set_height(0.4)
+        self._torso_height = 0.4
         self.start_pose()
         self.head.look_at('base_link', 0.8, 0, SHELF_HEIGHT-0.08)
         rospy.loginfo("Robot hardware initialized.")
@@ -251,8 +252,10 @@ class Pickup():
         
 
     def place(self, obj):
-        self.drop()
-        self.start_pose()
+        height = float(self.obj_db[obj['name']]['drop_height'])
+        rospy.loginfo(f"drop height for {obj['name']} is {height}")
+        self.drop(height=height)
+        # self.start_pose()
 
 
     def pickup_object(self, obj):
@@ -278,6 +281,7 @@ class Pickup():
         self.gripper.close(max_effort=effort)
         # Move out of the container
         pose.pose.position.z += GRIPPER_MARGIN
+        if not self.move_to_pose(pose): return False
         pose.pose.position.y += PRE_PICKUP_DIST
         if not self.move_to_pose(pose): return False
         return True
@@ -297,22 +301,38 @@ class Pickup():
         self._marker_publisher.publish(marker)
 
 
-    def drop(self):
-        if not self.silent:
-            rospy.loginfo("Starting Drop")
+    def drop(self, height=DROP_3.pose.position.z):
+        if self._gripper_pose.pose.position.z + SHELF_HEIGHT < height:
+            rospy.loginfo("attempting high drop")
+            pose = PoseStamped()
+            pose.header.frame_id = 'base_link'
+            pose.pose.orientation.x = -1.2860339460019077e-08
+            pose.pose.orientation.y = -5.4735482812873215e-09
+            pose.pose.orientation.z = -0.4184236228466034
+            pose.pose.orientation.w = 0.9082520008087158
+            pose.pose.position.y = 0.11
+            pose.pose.position.z = self._gripper_pose.pose.position.z + SHELF_HEIGHT
+            pose.pose.position.x = 0.49
+            # rospy.loginfo(f"dropping at pose: {pose}")
+            if self.move_to_pose(pose):
+                self.gripper.open()
+                return
+            else:
+                rospy.sleep(2)
+                rospy.logerr("could not move to high drop pose")
+            
+
         self.move_to_pose(START_POSE)
-        if not self.silent:
-            rospy.loginfo("Moving to Drop 1")
-        self.move_to_pose(DROP_1)
-        if not self.silent:
-            rospy.loginfo("Moving to Drop 2")
-        self.move_to_pose(DROP_2)
-        if not self.silent:
-            rospy.loginfo("Moving to Drop 3")
-        self.move_to_pose(DROP_3)
+
+        last_pose = copy.deepcopy(DROP_3)
+        last_pose.pose.position.z = height
+        rospy.loginfo(f"dropping at pose: {last_pose}")
+        poses = [DROP_1, DROP_2, last_pose]
+
+        for pose in poses:
+            self.move_to_pose(pose)
         self.gripper.open()
-        if not self.silent:
-            rospy.loginfo("Finished Drop")
+        self.start_pose()
     
     def start_pose(self):
         if not self.silent:
@@ -327,9 +347,25 @@ class Pickup():
 
     def move_to_pose(self, pose: PoseStamped) -> bool:
         self.visualize_gripper(pose)
+        if pose.header.frame_id != 'torso_lift_link':
+            height = pose.pose.position.z
+            if pose.header.frame_id == SHELF_FRAME_NAME:
+                height += SHELF_HEIGHT
+            self.move_torso_for_height(height)
         result = self.arm.move_to_pose_ik(pose)
         self._gripper_pose = pose
         return result
+
+
+    def move_torso_for_height(self, height):
+        target = ((height - 0.3) / 1.2) * 0.4 + 0.0
+        target = min(target, 0.4)
+        target = max(target, 0.0)
+        if abs(target - self._torso_height) > 0.05:
+            self.torso.set_height(target)
+            self._torso_height = target
+        else:
+            rospy.loginfo(f'torso within threshold, not moving. target: {target}, torso: {self._torso_height}')
 
 
     def clear_area(self, object: dict):
