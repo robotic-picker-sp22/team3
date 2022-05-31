@@ -1,7 +1,7 @@
 
 
 export const objectList = [
-    'pill_box',
-    'pill_bottle',
-    'box',
+    'Pill Box',
+    'Pill Bottle',
+    'Box',
 ]

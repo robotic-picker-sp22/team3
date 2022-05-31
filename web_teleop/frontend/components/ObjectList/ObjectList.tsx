@@ -29,22 +29,17 @@ export default function ObjectList({ ros }: ObjectListProps) {
     })
     return (
         <div className={styles.main}>
-            <Title order={2}>Shopping Cart</Title>
-            <ul>
+            <Title order={2}>Pick List</Title>
+            <ul className={styles.list}>
                 {form.values.objects.map((object, i) => (
                     <ObjectListItem key={`${object}-${i}`} object={object} deleteCallback={() => form.removeListItem('objects', i)}/>
                 ))}
             </ul>
-            <input type="text" onChange={e => {
-                setInputText(e.currentTarget.value || "")
-            }}
-                value={inputText}
-            />
             <Autocomplete
                 onChange={setInputText}
                 value={inputText}
                 data={objectList}
-                error={!objectList.includes(inputText)}
+                error={!objectList.includes(inputText) && inputText != ""}
             />
             <Button className={styles.button} onClick={() => {
                 if (objectList.includes(inputText)) {
@@ -53,7 +48,11 @@ export default function ObjectList({ ros }: ObjectListProps) {
                 setInputText("")
             }}>Add Item</Button>
             <Button className={styles.button} onClick={() => {
-                const request = new ROSLIB.ServiceRequest({ objects: form.values.objects })
+                const request = new ROSLIB.ServiceRequest({ objects: form.values.objects.map(obj => {
+                    return obj.toLocaleLowerCase().split(" ").join("_")
+                })})
+                console.log(request);
+                
                 service.callService(request, (e) => {
                     console.log("Received Response", e);
                 },

@@ -1,4 +1,5 @@
-import { Slider } from "@mantine/core"
+import { Button, Slider } from "@mantine/core"
+import { useToggle } from "@mantine/hooks"
 import { useEffect, useState } from "react"
 import ROSLIB from "roslib"
 import { deg2rad, round } from "../../utils/helpers"
@@ -31,6 +32,8 @@ const TILT_MARKS = [
 ]
 
 export default function HeadControls({ ros }: HeadControlsProps) {
+
+    const [editEnabled, toggleEnabled] = useToggle(false, [true, false])
     const head_pan_topic = new ROSLIB.Topic({
         ros,
         name: PAN_NAME,
@@ -80,6 +83,7 @@ export default function HeadControls({ ros }: HeadControlsProps) {
                     marks={TILT_MARKS}
                     defaultValue={0}
                     onChangeEnd={setHeadTilt}
+                    disabled={!editEnabled}
                 />
             </section>
             <section>
@@ -90,9 +94,14 @@ export default function HeadControls({ ros }: HeadControlsProps) {
                     step={SLIDER_STEP}
                     marks={PAN_MARKS}
                     defaultValue={0}
+                    value={editEnabled ? headPan : round(panMsg.data || 0.0, PREC)}
                     onChangeEnd={setHeadPan}
+                    disabled={!editEnabled}
                 />
             </section>
+            <Button color={!editEnabled ? "green" : "red"} onClick={() => toggleEnabled()}>
+                {editEnabled ? "Disable" : "Enable"}
+            </Button>
         </div>
     )
 }

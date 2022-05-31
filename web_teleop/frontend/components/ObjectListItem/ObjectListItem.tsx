@@ -1,4 +1,5 @@
 
+import { Button } from "@mantine/core"
 import styles from "./ObjectListItem.module.css"
 
 type ObjectListItemProps = {
@@ -8,8 +9,10 @@ type ObjectListItemProps = {
 export default function ObjectListItem({ object, deleteCallback }: ObjectListItemProps) {
     return (
         <li className={styles.main}>
-            <p className={styles.item}>{object}</p>
-            <button className={styles.button} onClick={() => deleteCallback(object)}>X</button>
+            <p className={styles.item}>{object.split("_").join(" ")}</p>
+            <Button variant="outline" color="red" onClick={() => deleteCallback(object)}>
+                X
+            </Button>
         </li>
     )
 }

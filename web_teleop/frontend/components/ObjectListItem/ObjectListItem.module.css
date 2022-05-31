@@ -1,15 +1,17 @@
 
 .main{
-    border-style: solid;
-    background-color: 	#E0E0E0;
-    border-radius: 15px;
+    border: 2px solid #E0E0E0;
+    border-radius: 5px;
     display: grid;
     grid-template-columns: 1fr 60px;
-    margin: 0.5ch 0.5ch;
+    align-items: center;
+    margin: 0.5ch 0.0ch;
+    padding: 0.5em;
 }
 
 .main p {
     margin: .5ch .5ch;
+    text-transform: capitalize;
 }
 
 
@@ -17,7 +19,7 @@
     margin-left: 10px;
     color: black;
     background-color: white;
-    border-radius: 20px;
+    border-radius: 5px;
 }
 
 .button:hover{
