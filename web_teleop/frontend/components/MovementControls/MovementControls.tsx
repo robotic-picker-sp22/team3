@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import ROSLIB, { Vector3 } from "roslib";
 import { round } from "../../utils/helpers";
 import styles from "./MovementControls.module.css"
+import WASDControls from "./WASDControls";
 
 type MovementControlsProps = {
     ros: ROSLIB.Ros
@@ -73,6 +74,9 @@ export default function MovementControls({ ros }: MovementControlsProps) {
                 <Button {...createTurnHandlers(LEFT)}>Left</Button>
                 <Button {...createMoveHandlers(BACK)}>Back</Button>
                 <Button {...createTurnHandlers(RIGHT)}>Right</Button>
+            </div>
+            <div>
+                <WASDControls ros={ros}/>
             </div>
         </div>
     )
