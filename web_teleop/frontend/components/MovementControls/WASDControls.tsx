@@ -66,9 +66,6 @@ export default function WASDControls({ ros }: WASDControlsProps) {
         }
     }, [isEnabled])
 
-    useEffect(() => {
-        console.log(`Trying to turn WASD ${closed ? "off" : "on"}`)
-    }, [closed])
 
     useEffect(() => {
         if (round(moveVel, PRECISION) !== 0 || round(turnVel, PRECISION) !== 0) {
