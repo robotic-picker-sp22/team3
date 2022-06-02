@@ -1,17 +1,62 @@
 {
-    "pill_box": {
-        "bins": [[2, 0]],
-        "grip_effort": 40,
-        "drop_height": 2
-    },
     "pill_bottle": {
-        "bins": [[2, 0]],
+        "bins": [[0, 1]],
         "grip_effort": 44,
         "drop_height": 0.5
     },
-    "box": {
-        "bins": [[0, 0]],
-        "grip_effort": 80,
-        "drop_height": 0.3
+    "blue_pills" : {
+        "bins": [[1, 1]],
+        "grip_effort": 50,
+        "drop_height": 0.5
+    },
+    "card_game" : {
+        "bins": [[1, 0]],
+        "grip_effort": 50,
+        "drop_height": 0.5
+    },
+    "deodorant" : {
+        "bins": [[4, 0]],
+        "grip_effort": 50,
+        "drop_height": 0.5
+    },
+    "fish_flakes" : {
+        "bins": [[2, 0]],
+        "grip_effort": 50,
+        "drop_height": 0.35
+    },
+    "hand_sanitizer" : {
+        "bins": [[3, 0]],
+        "grip_effort": 50,
+        "drop_height": 0.5
+    },
+    "juicer" : {
+        "bins": [[3, 0]],
+        "grip_effort": 50,
+        "drop_height": 0.5
+    },
+    "phone_case" : {
+        "bins": [[4, 0]],
+        "grip_effort": 50,
+        "drop_height": 0.5
+    },
+    "pill_box" : {
+        "bins": [[2, 0]],
+        "grip_effort": 38,
+        "drop_height": 0.5
+    },
+    "pillow" : {
+        "bins": [[1, 0]],
+        "grip_effort": 38,
+        "drop_height": 2.0
+    },
+    "soap" : {
+        "bins": [[2, 2]],
+        "grip_effort": 50,
+        "drop_height": 0.5
+    },
+    "white_pills" : {
+        "bins": [[2, 0]],
+        "grip_effort": 50,
+        "drop_height": 0.5
     }
 }

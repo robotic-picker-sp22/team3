@@ -270,14 +270,14 @@ def wait_for_time():
 #         self.marker_publisher.publish(marker)
 
 # Depth of all bins
-BIN_DEPTH = 0.28
-DEFAULT_Y = -0.12
+BIN_DEPTH = 0.20
+DEFAULT_Y = -0.08
 # Positions of the columns left and right
 COL_POSITIONS = [-0.13, -0.355, -0.495]
 
 LARGE_BIN_HEIGHT = 0.12
 LARGE_BIN_WIDTH = 0.246
-BIG_ROW_POSITIONS = [-0.105, -0.285, -0.457]  
+BIG_ROW_POSITIONS = [-0.105, -0.285, -0.457, -0.645, -0.814]  
 
 # Indices of the columns with small bins
 SMALL_COLUMNS = [1, 2, 3]
@@ -311,6 +311,11 @@ def crop_to_bin(row: int, col: int):
     rospy.set_param("crop_max_x", max_x)
     rospy.set_param("crop_max_y", max_y)
     rospy.set_param("crop_max_z", max_z)
+
+    for i in range(3):
+        pub_marker(x, y, z, width, depth, height)
+        rospy.sleep(0.2)
+        
     return x, y, z, width, depth, height
     
     
@@ -346,10 +351,6 @@ def main():
     row = int(argv[1])
     col = int(argv[2])
     x, y, z, width, depth, height = crop_to_bin(row, col)
-    
-    for i in range(3):
-        pub_marker(x, y, z, width, depth, height)
-        rospy.sleep(0.2)
 
 
 if __name__ == "__main__":

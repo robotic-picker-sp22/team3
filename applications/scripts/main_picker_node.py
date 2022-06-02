@@ -4,10 +4,11 @@ import sys
 import actionlib
 import os
 import json
+import robot_api
 
 from picking_msgs.srv import PickupObjectList, PickupObjectListResponse
 from picking_msgs.msg import PickRequestGoal, PickRequestAction
-from perception import crop_to_bin
+from perception import crop_to_bin, COL_POSITIONS, BIG_ROW_POSITIONS, SMALL_COLUMNS, SMALL_ROW_POSITIONS, SHELF_HEIGHT
 from pickup_server import STATUS_FAILED, STATUS_SUCCEEDED
 
 
@@ -28,7 +29,8 @@ class MainPickerNode:
         rospy.loginfo('Found picking server.')
         self._crop_row = None
         self._crop_col = None
-        self._crop(0, 0)
+        self._torso = robot_api.Torso()
+        self._head = robot_api.Head()
 
         
     def _crop(self, row: int, col: int):
@@ -37,9 +39,18 @@ class MainPickerNode:
         crop_to_bin(row, col)
         # Wait if the new bin is different than previous
         if row != self._crop_row or col != self._crop_col:
+            # Change height for the new row
+            row_pos = SMALL_ROW_POSITIONS[row] if col in SMALL_COLUMNS else BIG_ROW_POSITIONS[row]
+            row_height = SHELF_HEIGHT + row_pos
+            torso_height = row_height - 0.3 + 0.18
+            torso_height = max(torso_height, 0)
+            torso_height = min(0.4, torso_height)
+            self._torso.set_height(torso_height)
+            # Look at the new row
+            self._head.look_at('base_link', 0.5, 0, row_height)
             self._crop_row = row
             self._crop_col = col
-            rospy.sleep(2)
+            rospy.sleep(4)
 
 
     def _parse_db_file(self, fpath: str):
@@ -84,13 +95,12 @@ class MainPickerNode:
         if len(locations) == 0:
             rospy.logerr(f"No locations found for object {objectName}")
             return False
-        
-        row, col = locations.pop()
+        rospy.loginfo(f'\n\nAttempting to pick {objectName}...\n\n')
+        row, col = locations[-1]
         self._crop(row, col)
 
         goal = PickRequestGoal()
         goal.name = objectName
-        rospy.loginfo(f'Attempting to pick {objectName}...')
         self._picker_client.send_goal(goal, feedback_cb=self._pick_feedback_cb)
         self._picker_client.wait_for_result()
         
@@ -98,7 +108,7 @@ class MainPickerNode:
         if result.status == STATUS_FAILED:
             rospy.logwarn(f'Could not pick up {objectName}')
             # Add the object back to the database
-            locations.append((row, col))
+            # locations.append((row, col))
             return False
         elif result.status == STATUS_SUCCEEDED:
             rospy.loginfo(f"Successfully picked up {objectName}!")

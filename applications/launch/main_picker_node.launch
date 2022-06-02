@@ -1,6 +1,6 @@
 <launch>
     <arg name="db_file" value="$(find applications)/../object_db_files/db.json"/>
-    <include file="$(find robot_api)/launch/move_group.launch" />
+    <!-- <include file="$(find robot_api)/launch/move_group.launch" /> -->
     <node pkg="applications" type="pickup_server.py" name="pickup_server_node" args="$(arg db_file)" output="screen"/>
     <node pkg="applications" type="main_picker_node.py" name="main_picker_node" args="$(arg db_file)" output="screen"/>
 </launch>

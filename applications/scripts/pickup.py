@@ -5,7 +5,9 @@ from gripper_marker import gripper_markers
 from perception import SHELF_FRAME_NAME
 
 import robot_api
+import tf.transformations as tft
 import rospy
+import math
 import copy
 from geometry_msgs.msg import PoseStamped, Quaternion
 from perception_msgs.msg import ObjectPose
@@ -27,6 +29,10 @@ Point cloud demo:
 Then run this code
 '''
 
+SIMILAR_OBJECTS = {
+    'pillow': []
+}
+
 def print_usage():
     print('Picks up an object')
     print('Usage: rosrun applications pickup.py object_name')
@@ -40,15 +46,15 @@ GRIPPER_MARGIN = 0.04
 FINGER_LENGTH = 0.03
 
 
-AR_FLAT = Quaternion()
-# AR_FLAT.x = 0
-# AR_FLAT.y = 0
-# AR_FLAT.z = 0
-# AR_FLAT.w = 1
-AR_FLAT.x = 0.0
-AR_FLAT.y = 0
-AR_FLAT.z = .707
-AR_FLAT.w = -.707
+SHELF_FRAME_FLAT = Quaternion()
+# SHELF_FRAME_FLAT.x = 0
+# SHELF_FRAME_FLAT.y = 0
+# SHELF_FRAME_FLAT.z = 0
+# SHELF_FRAME_FLAT.w = 1
+SHELF_FRAME_FLAT.x = 0.0
+SHELF_FRAME_FLAT.y = 0
+SHELF_FRAME_FLAT.z = .707
+SHELF_FRAME_FLAT.w = -.707
 
 
 START_POSE = PoseStamped()
@@ -63,35 +69,35 @@ START_POSE.pose.orientation.w = 1
 
 DROP_1 = PoseStamped()
 DROP_1.header.frame_id = "base_link"
-DROP_1.pose.position.x = 0.5148853659629822
-DROP_1.pose.position.y = 0.011607034131884575
-DROP_1.pose.position.z = 0.8320705890655518
-DROP_1.pose.orientation.x = 0.0021663254592567682
-DROP_1.pose.orientation.y = 0.26713114976882935
-DROP_1.pose.orientation.z = -0.009311444126069546
-DROP_1.pose.orientation.w = 0.9636127352714539
-
+DROP_1.pose.position.x = 0.45041295886039734
+DROP_1.pose.position.y = 0.21548502147197723
+DROP_1.pose.position.z = 0.7254860401153564
+DROP_1.pose.orientation.x = 2.2783281039551184e-08
+DROP_1.pose.orientation.y = -2.3260550818804404e-08
+DROP_1.pose.orientation.z = -0.5943077802658081
+DROP_1.pose.orientation.w = 0.8042377233505249
 
 DROP_2 = PoseStamped()
 DROP_2.header.frame_id = "base_link"
-DROP_2.pose.position.x = 0.5997003316879272
-DROP_2.pose.position.y = 0.009853675961494446
-DROP_2.pose.position.z = 0.6659631133079529
-DROP_2.pose.orientation.x = 0.0032368043903261423
-DROP_2.pose.orientation.y = 0.37761861085891724
-DROP_2.pose.orientation.z = -0.008995501324534416
-DROP_2.pose.orientation.w = 0.9259118437767029
+DROP_2.pose.position.x = 0.5906287431716919
+DROP_2.pose.position.y = -0.016167964786291122
+DROP_2.pose.position.z = 0.5
+DROP_2.pose.orientation.x = 1.643380720395271e-08
+DROP_2.pose.orientation.y = 0.5212529301643372
+DROP_2.pose.orientation.z = -5.411258641174754e-08
+DROP_2.pose.orientation.w = 0.8534022569656372
+
 
 
 DROP_3 = PoseStamped()
 DROP_3.header.frame_id = "base_link"
-DROP_3.pose.position.x = 0.7164484858512878
-DROP_3.pose.position.y = 0.007487976923584938
-DROP_3.pose.position.z = 0.4970704913139343
-DROP_3.pose.orientation.x = 0.005603693891316652
-DROP_3.pose.orientation.y = 0.6194995641708374
-DROP_3.pose.orientation.z = -0.007745636161416769
-DROP_3.pose.orientation.w = 0.7849387526512146
+DROP_3.pose.position.x = 0.639046311378479
+DROP_3.pose.position.y = 0
+DROP_3.pose.position.z = 0.3455299139022827
+DROP_3.pose.orientation.x = -0.0011727483943104744
+DROP_3.pose.orientation.y = 0.6923012137413025
+DROP_3.pose.orientation.z = -0.0012226116377860308
+DROP_3.pose.orientation.w = 0.7216067314147949
 
 def wait_for_time():
     """Wait for simulated time to begin.
@@ -129,6 +135,7 @@ class Pickup():
         self.torso.set_height(0.4)
         self._torso_height = 0.4
         self.start_pose()
+        self.gripper.open()
         self.head.look_at('base_link', 0.8, 0, SHELF_HEIGHT-0.08)
         rospy.loginfo("Robot hardware initialized.")
 
@@ -138,9 +145,9 @@ class Pickup():
         '''
         # old_objects = list(self.objects)
         old_names = [obj['name'] for obj in self.objects]
-        self.objects.clear()
         if self.pause_perception:
             return
+        self.objects.clear()
         for name, pose, dimensions in zip(msg.names, msg.poses, msg.dimensions):
             new_obj = {"name": name, "pose": pose, "dimensions": dimensions}
             if new_obj['name'] in old_names:
@@ -158,6 +165,12 @@ class Pickup():
         if couldn't find the object
         '''
         obj_name = obj_name.lower()
+        # Assume expected object
+        if len(self.objects) == 1:
+            object = self.objects[0]
+            rospy.loginfo(f'Knows of {object["name"]} but assuming {obj_name}')
+            object['name'] = obj_name
+            return object
         for object in self.objects:
             if object['name'].lower() == obj_name:
                 return object
@@ -191,13 +204,14 @@ class Pickup():
         ''' Returns a new copied pose from the object
         '''
         pose = PoseStamped()
-        pose.header.frame_id = obj['pose'].header.frame_id
+        assert(obj['pose'].header.frame_id == 'shelf_frame')
+        pose.header.frame_id = 'shelf_frame'
         pose.header.stamp = rospy.Time.now()
         pose.pose.position = copy.deepcopy(obj['pose'].pose.position)
         # pose.pose.position.x = obj['pose'].pose.position.x
         # pose.pose.position.y = obj['pose'].pose.position.y
         # pose.pose.position.z = obj['pose'].pose.position.z
-        pose.pose.orientation = AR_FLAT
+        pose.pose.orientation = SHELF_FRAME_FLAT
         return pose
 
     '''
@@ -248,6 +262,11 @@ class Pickup():
         print(f'object {obj["name"]}\n{obj["pose"]}')
         result = self.pickup_object(obj)
         self.pause_perception = False
+        if not result: 
+            rospy.logerr('Failed to pick up.')
+            self.start_pose()
+        else:
+            rospy.loginfo('Succesfully picked!')
         return result
         
 
@@ -261,18 +280,18 @@ class Pickup():
     def pickup_object(self, obj):
         pose = self.copy_pose(obj)
         obj_depth = obj['dimensions'].y/2 + 0.01
-        obj_width = obj['dimensions'].x + 0.01
+        obj_width = obj['dimensions'].x + 0.018
         # Move to just infront of the object
         rospy.loginfo(f'obj depth {obj_depth}')
         pose.pose.position.y += GRIPPER_LENGTH + FINGER_LENGTH + obj_depth
-        pose.pose.orientation = AR_FLAT
+        pose.pose.orientation = SHELF_FRAME_FLAT
         if not self.move_to_pose(pose): 
             rospy.logerr('Just pre-grasp error')
             return False
         # Grasp the object
         rospy.loginfo(f"Opening gripper to width {obj_width}")
-        self.gripper.open(obj_width)
-        pose.pose.position.y -= FINGER_LENGTH + 0.03
+        self.gripper.open()  # Just open gripper all the way
+        pose.pose.position.y -= 2 * FINGER_LENGTH + 0.02
         if not self.move_to_pose(pose): 
             rospy.logerr('Grasp error')
             return False
@@ -280,10 +299,18 @@ class Pickup():
         rospy.loginfo(f'Using effort {effort} for {obj["name"]}.')
         self.gripper.close(max_effort=effort)
         # Move out of the container
-        pose.pose.position.z += GRIPPER_MARGIN
+        pose.pose.position.z += 0.02 #GRIPPER_MARGIN
         if not self.move_to_pose(pose): return False
-        pose.pose.position.y += PRE_PICKUP_DIST
-        if not self.move_to_pose(pose): return False
+        steps = 3
+        distance = PRE_PICKUP_DIST + obj_depth
+        for _ in range(steps):
+            pose.pose.position.y += distance/steps
+            if not self.move_to_pose(pose, 5/steps): 
+                rospy.logwarn('Failed to pull out of the bin')
+                rospy.sleep(2)
+                rospy.loginfo('Attempting rotate pullout')
+                if not self.rotate_pullout():
+                    return False
         return True
 
     def visualize_gripper(self, pose: PoseStamped):
@@ -297,11 +324,12 @@ class Pickup():
         marker.scale.z = 0.03
         # Color
         marker.color.r = 1.0
-        marker.color.a = 0.6
+        marker.color.a = 1.0
         self._marker_publisher.publish(marker)
 
 
     def drop(self, height=DROP_3.pose.position.z):
+        # Try high drop
         if self._gripper_pose.pose.position.z + SHELF_HEIGHT < height:
             rospy.loginfo("attempting high drop")
             pose = PoseStamped()
@@ -323,14 +351,17 @@ class Pickup():
             
 
         self.move_to_pose(START_POSE)
-
+        rospy.loginfo(f'Dropping at height {height}')
+        self.torso.set_height(0.1) # Use this torso height for dropping objects
         last_pose = copy.deepcopy(DROP_3)
-        last_pose.pose.position.z = height
+        last_pose.pose.position.z = max(height, last_pose.pose.position.z)
         rospy.loginfo(f"dropping at pose: {last_pose}")
         poses = [DROP_1, DROP_2, last_pose]
 
         for pose in poses:
             self.move_to_pose(pose)
+            rospy.loginfo(f'Moved to pose with height {pose.pose.position.z}')
+            if pose.pose.position.z < height: break
         self.gripper.open()
         self.start_pose()
     
@@ -345,20 +376,57 @@ class Pickup():
         exit(-1)
 
 
-    def move_to_pose(self, pose: PoseStamped) -> bool:
+    def rotate_pullout(self):
+        assert(self._gripper_pose.header.frame_id == 'shelf_frame')
+        pose = PoseStamped()
+        pose.header.frame_id = 'shelf_frame'
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position = copy.deepcopy(self._gripper_pose.pose.position)
+        pose.pose.orientation = SHELF_FRAME_FLAT
+        self.move_to_pose(pose)
+        rospy.logerr('Moved to first pose')
+        rospy.sleep(4)
+
+        total_degree_change = 45
+        degree_step = 5
+        starting_quaternion = (
+            pose.pose.orientation.x,
+            pose.pose.orientation.y,
+            pose.pose.orientation.z,
+            pose.pose.orientation.w
+        )
+        euler = tft.euler_from_quaternion(starting_quaternion)
+        for i in range(total_degree_change//degree_step):
+            # Rotate
+            euler[0] += math.radians(degree_step)
+            quat = tft.quaternion_from_euler(euler[0], euler[1], euler[2])
+            pose.pose.orientation.x = quat[0]
+            pose.pose.orientation.y = quat[1]
+            pose.pose.orientation.z = quat[2]
+            pose.pose.orientation.w = quat[3]
+            # Move down
+            pose.pose.position.z -= 0.005
+            if not self.move_to_pose(pose):
+                rospy.logerr(f'Failed to move to pose {i}')
+                return False
+        return True
+        
+
+
+    def move_to_pose(self, pose: PoseStamped, time=5) -> bool:
         self.visualize_gripper(pose)
         if pose.header.frame_id != 'torso_lift_link':
             height = pose.pose.position.z
             if pose.header.frame_id == SHELF_FRAME_NAME:
                 height += SHELF_HEIGHT
-            self.move_torso_for_height(height)
-        result = self.arm.move_to_pose_ik(pose)
-        self._gripper_pose = pose
+            # self.move_torso_for_height(height) NOTE: removed this because main_picker_node moves torso depending on the bin
+        result = self.arm.move_to_pose_ik(pose, time)
+        if result: self._gripper_pose = pose
         return result
 
 
     def move_torso_for_height(self, height):
-        target = ((height - 0.3) / 1.2) * 0.4 + 0.0
+        target = height - 0.9
         target = min(target, 0.4)
         target = max(target, 0.0)
         if abs(target - self._torso_height) > 0.05:
@@ -393,7 +461,7 @@ class Pickup():
         rospy.loginfo('Pushing %s out of the way' % object['name'])
         pose = self.copy_pose(object)
         dimensions = object['dimensions']
-        pose.pose.orientation = AR_FLAT
+        pose.pose.orientation = SHELF_FRAME_FLAT
         # Pre-push position
         offset = dimensions.x/2 + GRIPPER_MARGIN
         if not to_right: offset *= -1
@@ -402,10 +470,10 @@ class Pickup():
         pose.pose.position.x += GRIPPER_MARGIN
         self.move_to_pose(pose)
         # Just abt to push position
-        pose.pose.position.y -= PRE_PICKUP_DIST
+        pose.pose.position.y -= PRE_PICKUP_DIST - FINGER_LENGTH - dimensions.y/2 + 0.015
         self.move_to_pose(pose)
         # Push position
-        pose.pose.position.x = -0.10 #TODO: change this to be variable
+        pose.pose.position.x = -0.10 - offset
         self.move_to_pose(pose)
         # Back off
         offset = GRIPPER_MARGIN 
@@ -420,8 +488,10 @@ class Pickup():
         object, and returns a list of objects infront
         '''
         objects_infront = []
+        rospy.loginfo(self.objects)
         for other_obj in self.objects:
             if other_obj == object: continue
+            rospy.loginfo(f'Comparing against {other_obj["name"]}')
             if self.infront(object, other_obj):
                 rospy.loginfo('%s infront of %s' % (other_obj['name'], object['name']))
                 objects_infront.append(other_obj)
@@ -434,13 +504,14 @@ class Pickup():
         ''' Returns true if object_behind is behind object_infront,
         false otherwise
         '''
+        margin = 0.015
         # Check object behind is further into the bin
         if obj_b['pose'].pose.position.y >= obj_i['pose'].pose.position.y:
             rospy.loginfo('%s toward front of bin of %s' % (obj_b['name'], obj_i['name']))
             return False
         # Else behind is further into bin, check horizontal overlap
-        b_min = obj_b['pose'].pose.position.x - obj_b['dimensions'].x/2
-        b_max = obj_b['pose'].pose.position.x + obj_b['dimensions'].x/2
+        b_min = obj_b['pose'].pose.position.x - obj_b['dimensions'].x/2 - margin
+        b_max = obj_b['pose'].pose.position.x + obj_b['dimensions'].x/2 + margin
         i_min = obj_i['pose'].pose.position.x - obj_i['dimensions'].x/2
         i_max = obj_i['pose'].pose.position.x + obj_i['dimensions'].x/2
         rospy.loginfo('obj_b %s' % obj_b['name'])
@@ -489,9 +560,56 @@ def main():
     pickup = Pickup('/home/capstone/catkin_ws/src/fetch-picker/object_db_files/db.json')
     sleep(1)
     rospy.loginfo(f"Finished initializing pickup")
-    pickup.pickup(argv[1])
+    pickup.rotate_pullout()
+    # pickup.pickup(argv[1])
     # pickup.start_pose()
     # rospy.spin()
 
 if __name__ == '__main__':
     main()
+
+
+
+'''
+BEFORE:
+pose: 
+  position: 
+    x: 0.4583306312561035
+    y: 0.23042137920856476
+    z: 1.2353543043136597
+  orientation: 
+    x: 0.004748587496578693
+    y: -0.01667666621506214
+    z: -0.027947677299380302
+    w: 0.9994590878486633
+
+
+
+AFTER:
+  seq: 0
+  stamp: 
+    secs: 0
+    nsecs:         0
+  frame_id: "base_link"
+pose: 
+  position: 
+    x: 0.46850183606147766
+    y: 0.23124170303344727
+    z: 1.1024301052093506
+  orientation: 
+    x: -0.0013878662139177322
+    y: -0.23174162209033966
+    z: -0.02831421233713627
+    w: 0.9723643660545349
+    
+
+BACK More:
+ x: 0.31994563341140747
+    y: 0.2403152883052826
+    z: 1.0272750854492188
+  orientation: 
+    x: -0.001387863652780652
+    y: -0.23174162209033966
+    z: -0.02831421233713627
+    w: 0.9723643660545349
+'''

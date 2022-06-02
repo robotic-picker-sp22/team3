@@ -21,7 +21,7 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 SHELF_FRAME_NAME = 'shelf_frame'
 SHELF_HEIGHT = 1.52 # TODO: tune this
 
-USE_SIM_SETTINGS = True
+USE_SIM_SETTINGS = False
 TAG_POSE_TOPIC = '/ar_pose_marker'
 TF_TOPIC = '/tf'
 

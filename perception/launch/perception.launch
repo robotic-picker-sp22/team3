@@ -15,8 +15,8 @@ default camera (arg cam) should be set to "/head_camera/depth_registered/points"
 <launch>
 	<arg name="cam" default="/head_camera/depth_registered/points"/>
 	<arg name="data_dir" default="/home/capstone/catkin_ws/src/fetch-picker/combined_labels"/>
-	<param name="ec_cluster_tolerance" value="0.02" />
-	<param name="ec_min_cluster_size" value="100" />
+	<param name="ec_cluster_tolerance" value="0.018" />
+	<param name="ec_min_cluster_size" value="300" />
 	<param name="ec_max_cluster_size" value="20000" />
 	<param name="distance_above_plane" value="0.01" />
 	<param name="crop_min_x" value="-1" />
