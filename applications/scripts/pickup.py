@@ -291,8 +291,9 @@ class Pickup():
         # Grasp the object
         rospy.loginfo(f"Opening gripper to width {obj_width}")
         self.gripper.open()  # Just open gripper all the way
+        # Raise slightly
         pose.pose.position.y -= 2 * FINGER_LENGTH + 0.02
-        if not self.move_to_pose(pose): 
+        if not self.move_to_pose(pose, 2): 
             rospy.logerr('Grasp error')
             return False
         effort = int(self.obj_db[obj['name']]['grip_effort'])
@@ -383,22 +384,22 @@ class Pickup():
         pose.header.stamp = rospy.Time.now()
         pose.pose.position = copy.deepcopy(self._gripper_pose.pose.position)
         pose.pose.orientation = SHELF_FRAME_FLAT
-        self.move_to_pose(pose)
-        rospy.logerr('Moved to first pose')
-        rospy.sleep(4)
+        # self.move_to_pose(pose)
+        # rospy.logerr('Moved to first pose')
+        # rospy.sleep(4)
 
         total_degree_change = 45
-        degree_step = 5
+        degree_step = -5
         starting_quaternion = (
             pose.pose.orientation.x,
             pose.pose.orientation.y,
             pose.pose.orientation.z,
             pose.pose.orientation.w
         )
-        euler = tft.euler_from_quaternion(starting_quaternion)
-        for i in range(total_degree_change//degree_step):
+        euler = list(tft.euler_from_quaternion(starting_quaternion))
+        for i in range(abs(total_degree_change//degree_step)):
             # Rotate
-            euler[0] += math.radians(degree_step)
+            euler[1] += math.radians(degree_step)
             quat = tft.quaternion_from_euler(euler[0], euler[1], euler[2])
             pose.pose.orientation.x = quat[0]
             pose.pose.orientation.y = quat[1]
@@ -408,6 +409,7 @@ class Pickup():
             pose.pose.position.z -= 0.005
             if not self.move_to_pose(pose):
                 rospy.logerr(f'Failed to move to pose {i}')
+                rospy.sleep(4)
                 return False
         return True
         
