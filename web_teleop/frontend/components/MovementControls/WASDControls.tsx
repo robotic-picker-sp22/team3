@@ -88,12 +88,12 @@ export default function WASDControls({ ros }: WASDControlsProps) {
 
     return (
         <div>
-            <h3>WASDMovement</h3>
+            <h3>Robot Base Keyboard Movement</h3>
             <Switch
                 checked={isEnabled}
                 onLabel="On"
                 offLabel="Off"
-                label="WASD"
+                label="WASD Movement Switch"
                 onChange={(e) => setEnabled(e.currentTarget.checked)}
                 size="xl"
             />

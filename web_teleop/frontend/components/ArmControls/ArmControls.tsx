@@ -26,6 +26,7 @@ const WRIST_ROLL = 1.28e-6
 
 export default function ArmControls({ ros }: ArmControlsProps) {
 
+    const [editEnabled, setEditEnabled] = useState(false)
     const [shoulderPan , setShoulderPan] = useState(SHOULDER_PAN)
     const [shoulderLift , setShoulderLift] = useState(SHOULDER_LIFT)
     const [upperarmRoll , setUpperarmRoll] = useState(UPPERARM_ROLL)
@@ -52,11 +53,11 @@ export default function ArmControls({ ros }: ArmControlsProps) {
             wrist_flex: wristFlex,
             wrist_roll: wristRoll,
         })
-        service.callService(
-            request,
-            () => { console.log(`Finished moving arm`) },
-            (e) => { console.log(`Failed to move arm`, e) },
-        )
+        // service.callService(
+        //     request,
+        //     () => { console.log(`Finished moving arm`) },
+        //     (e) => { console.log(`Failed to move arm`, e) },
+        // )
     }, [shoulderLift, shoulderPan, upperarmRoll, elbowFlex, wristFlex, wristRoll])
     return (
         <div>

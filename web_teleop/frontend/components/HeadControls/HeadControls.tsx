@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import ROSLIB from "roslib"
 import { deg2rad, round } from "../../utils/helpers"
 import { useTopicSubscriber } from "../../utils/RosHooks"
+import styles from './HeadControls.module.css'
 
 type HeadControlsProps = {
     ros: ROSLIB.Ros
@@ -98,6 +99,7 @@ export default function HeadControls({ ros }: HeadControlsProps) {
                     onChangeEnd={setHeadPan}
                     disabled={!editEnabled}
                 />
+                <div className={styles.spacing}></div>
             </section>
             <Button color={!editEnabled ? "green" : "red"} onClick={() => toggleEnabled()}>
                 {editEnabled ? "Disable" : "Enable"}

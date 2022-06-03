@@ -65,7 +65,7 @@ export default function MovementControls({ ros }: MovementControlsProps) {
     }, [moveVel, turnVel])
 
     return (
-        <div>
+        <div className={styles.container}>
             <h3>Movement Controls</h3>
             <div className={styles.topButtons}>
                 <Button {...createMoveHandlers(FORWARD)}>Forward</Button>

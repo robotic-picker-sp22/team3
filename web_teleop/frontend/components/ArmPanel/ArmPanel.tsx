@@ -7,8 +7,8 @@ export default function ArmPanel({ ros }: ArmPanelProps) {
 
     return (
         <div>
-            <ArmControls ros={ros} />
-            <GripperControls ros={ros} />
+            {/* <ArmControls ros={ros} /> */}
+            {/* <GripperControls ros={ros} /> */}
         </div>
     )
 }

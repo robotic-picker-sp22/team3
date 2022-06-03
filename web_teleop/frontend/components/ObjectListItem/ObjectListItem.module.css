@@ -3,7 +3,7 @@
     border: 2px solid #E0E0E0;
     border-radius: 5px;
     display: grid;
-    grid-template-columns: 1fr 60px;
+    grid-template-columns: 3rem 1fr 60px;
     align-items: center;
     margin: 0.5ch 0.0ch;
     padding: 0.5em;
@@ -12,6 +12,13 @@
 .main p {
     margin: .5ch .5ch;
     text-transform: capitalize;
+}
+
+
+.main img {
+    height: 3rem;
+    width: 3rem;
+    object-fit: cover;
 }
 
 
